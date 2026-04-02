@@ -1,0 +1,72 @@
+
+const labsChannelId = `1427078759525388360`;
+const dev_mode = process.argv.includes("-dev");
+
+const config = {
+    polls_enabled: false,
+    guild: dev_mode ? process.env.DEV_GUILD_ID : process.env.GUILD_ID,
+    brand_color: 0x79b050,
+    channels: {
+        hangout: dev_mode ? labsChannelId : "1332463364538110055",
+        new_videos: dev_mode ? labsChannelId : "1391159162716688525",
+        rules: dev_mode ? labsChannelId : "1421354750221484042",
+        about: dev_mode ? labsChannelId : "1421354883012886579",
+        streams: dev_mode ? labsChannelId : "1421355207782170746",
+        pets: dev_mode ? labsChannelId : "1421357593615532164",
+        setups: dev_mode ? labsChannelId : "1421356137047003306",
+        lfg: dev_mode ? labsChannelId : "1421356804071493693",
+        logs: dev_mode ? labsChannelId : "1421358478546567199",
+        labs: labsChannelId
+    },
+    emojis: {
+        chow: "<:_:1421359802323304580>",
+        dance: "<:_:1421359803514490921>",
+        lol: "<:_:1421359804743684197>",
+        instagram: "<:_:1421359946142056528>",
+        tiktok: "<:_:1421359944871051345>",
+        twitch: "<:_:1421359943759564872>",
+        youtube: "<:_:1421359942522376223>",
+        "1": "<:_:1421359675957579786>",
+        "2": "<:_:1421359715471851602>",
+        "3": "<:_:1421359672970969119>",
+        "4": "<:_:1421359671612018899>",
+        "5": "<:_:1421359670567895101>",
+        "6": "<:_:1421359669460336802>",
+        "7": "<:_:1421359668118290452>",
+        "8": "<:_:1421359667006804029>",
+        "9": "<:_:1421359665639461064>",
+        "10": "<:_:1421359664561389619>",
+    },
+    roles: {
+        members: dev_mode ? "1421347892010025013" : "1421348907316809789",
+        levels: {
+            "1": "1421348905756397678",
+            "2": "1421348905219522692",
+            "3": "1421348904653295656",
+            "4": "1421348903957299250",
+            "5": "1421348903592263730",
+            "6": "1421348902849871914",
+            "7": "1421348490973413517",
+            "8": "1421349754234863737",
+            "9": "1421349753819631698",
+            "10": "1421349754826391713",
+        },
+        twitch_subscriber: "1421380129120190525" // temp (booster role)
+    },
+    level_perks: {
+        "6": "Slowed XP Degradation",
+        "7": "a Custom (SFW) Emoji",
+        "8": "a Custom (SFW) Soundboard",
+        "9": "a Custom (SFW) Role",
+        "10": ["VIP on Twitch", "a hoisted custom role"],
+    },
+    xp_multipliers: {
+        base: 1,
+        sub: 1.2,
+    }
+}
+
+console.log(dev_mode)
+console.log(config);
+
+export default config;
