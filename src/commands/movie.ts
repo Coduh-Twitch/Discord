@@ -1,9 +1,10 @@
-import { ApplicationCommandChoicesData, ApplicationCommandChoicesOption, ApplicationCommandOptionChoiceData, ApplicationCommandOptionType, AutocompleteInteraction, blockQuote, ChatInputCommandInteraction, codeBlock, MessageFlags, PermissionFlagsBits, SeparatorSpacingSize } from "discord.js";
+import { ApplicationCommandChoicesData, ApplicationCommandChoicesOption, ApplicationCommandOptionChoiceData, ApplicationCommandOptionType, AutocompleteInteraction, blockQuote, channelMention, ChannelType, ChatInputCommandInteraction, codeBlock, ContainerBuilder, MessageFlags, PermissionFlagsBits, Poll, PollData, PollLayoutType, roleMention, SeparatorSpacingSize, TextChannel, userMention } from "discord.js";
 import { Command } from "../classes/Command";
 import axios from "axios";
 import { TMComponentBuilder } from "../classes/ComponentBuilder";
 import { writeJSON, writeJSONSync } from "fs-extra";
 import { join } from "path";
+import config from "../config";
 
 export interface TMDBGenre {
     id: number;
@@ -158,11 +159,31 @@ async function getCreditById(creditId: string): Promise<TMDBCreditFull | null> {
 
 async function getDirectorsByMovieId(movieId: string): Promise<TMDBCrewMember[]> {
     let crew = await getCrewByMovieId(movieId);
-    if(!crew) return [];
+    if (!crew) return [];
     return crew.filter(c => c.job === "Director");
 }
 
 const truncate = (input, length: number = 5) => input.length > length ? `${input.substring(0, length)}...` : input;
+
+async function buildMovieContainer(movie: TMDBMovieFull, withImages: boolean = true): Promise<TMComponentBuilder> {
+    let directors = await getDirectorsByMovieId(movie.id.toString())
+
+    let movieContainer = new TMComponentBuilder();
+    if (movie.backdrop_path && withImages) {
+        movieContainer.addMediaGallery([{ media: { url: `https://image.tmdb.org/t/p/w780${movie.backdrop_path}` } }])
+    }
+
+    if (movie.poster_path) {
+        movieContainer.addThumbnailAccessorySection(`# ${movie.title} (${movie.release_date.split("-")[0]})\n-# ${movie.genres.map(g => `${g.name}`).join(", ")} ${movie.adult ? `• **18+**` : ""}\n${movie.production_companies.length > 0 ? `\n-# **Studio${movie.production_companies.length === 1 ? "" : "s"}:** ${movie.production_companies.map(c => `\`${c.name}\``).join(" ")}` : ""}${directors.length > 0 ? `\n-# **Director${directors.length === 1 ? "" : "s"}:** ${directors.map(c => `${c.name}`).join(" ")}` : ""}`, `https://image.tmdb.org/t/p/w780${movie.poster_path}`)
+    } else {
+        movieContainer.addTextDisplay(`# ${movie.title} (${movie.release_date.split("-")[0]})\n-# ${movie.genres.map(g => `${g.name}`).join(", ")} ${movie.adult ? `• **18+**` : ""}\n${movie.production_companies.length > 0 ? `\n-# **Studio${movie.production_companies.length === 1 ? "" : "s"}:** ${movie.production_companies.map(c => `\`${c.name}\``).join(" ")}` : ""}${directors.length > 0 ? `\n-# **Director${directors.length === 1 ? "" : "s"}:** ${directors.map(c => `${c.name}`).join(" ")}` : ""}`);
+    }
+    movieContainer.addSeparator(SeparatorSpacingSize.Small)
+    movieContainer.addTextDisplay(`${blockQuote(movie.overview || "No Overview Found")}`)
+    movieContainer.addTextDisplay(`\n\n-# [View on TMDB](https://themoviedb.org/movie/${movie.id})`)
+
+    return movieContainer;
+}
 
 const MovieCommand: Command = {
     enabled: true,
@@ -183,14 +204,111 @@ const MovieCommand: Command = {
                     required: true
                 }
             ]
+        },
+        {
+            name: "poll",
+            type: ApplicationCommandOptionType.Subcommand,
+            description: "Send a poll with up to 10 different movie choices",
+            options: [
+                {
+                    name: "channel",
+                    description: "Where to send the poll",
+                    type: ApplicationCommandOptionType.Channel,
+                    channel_types: [ChannelType.GuildText, ChannelType.GuildAnnouncement, ChannelType.PublicThread, ChannelType.PrivateThread, ChannelType.AnnouncementThread],
+                    required: true
+                },
+                {
+                    name: "poll_duration",
+                    description: "How long should the poll last?",
+                    type: ApplicationCommandOptionType.Number,
+                    choices: [{ name: '1 Hour', value: 1 }, { name: '4 Hours', value: 4 }, { name: '8 Hours', value: 8 }, { name: '24 Hours', value: 24 }, { name: '3 Days', value: 72 }],
+                    required: true
+                },
+                {
+                    name: "allow_multiple_votes",
+                    description: "Allow users to vote for multiple choices",
+                    type: ApplicationCommandOptionType.Boolean,
+                    required: true
+                },
+                {
+                    name: "movie-1",
+                    description: "Search for the first movie (required)",
+                    type: ApplicationCommandOptionType.String,
+                    autocomplete: true,
+                    required: true
+                },
+                {
+                    name: "movie-2",
+                    description: "Search for the second movie (required)",
+                    type: ApplicationCommandOptionType.String,
+                    autocomplete: true,
+                    required: true
+                },
+                {
+                    name: "movie-3",
+                    description: "Search for the third movie (optional)",
+                    type: ApplicationCommandOptionType.String,
+                    autocomplete: true,
+                    required: false
+                },
+                {
+                    name: "movie-4",
+                    description: "Search for the fourth movie (optional)",
+                    type: ApplicationCommandOptionType.String,
+                    autocomplete: true,
+                    required: false
+                },
+                {
+                    name: "movie-5",
+                    description: "Search for the fifth movie (optional)",
+                    type: ApplicationCommandOptionType.String,
+                    autocomplete: true,
+                    required: false
+                },
+                {
+                    name: "movie-6",
+                    description: "Search for the sixth movie (optional)",
+                    type: ApplicationCommandOptionType.String,
+                    autocomplete: true,
+                    required: false
+                },
+                {
+                    name: "movie-7",
+                    description: "Search for the seventh movie (optional)",
+                    type: ApplicationCommandOptionType.String,
+                    autocomplete: true,
+                    required: false
+                },
+                {
+                    name: "movie-8",
+                    description: "Search for the eighth movie (optional)",
+                    type: ApplicationCommandOptionType.String,
+                    autocomplete: true,
+                    required: false
+                },
+                {
+                    name: "movie-9",
+                    description: "Search for the ninth movie (optional)",
+                    type: ApplicationCommandOptionType.String,
+                    autocomplete: true,
+                    required: false
+                },
+                {
+                    name: "movie-10",
+                    description: "Search for the tenth movie (optional)",
+                    type: ApplicationCommandOptionType.String,
+                    autocomplete: true,
+                    required: false
+                }
+            ]
         }
     ],
     autocomplete: async (interaction: AutocompleteInteraction) => {
 
         let focusedOption = interaction.options.getFocused(true);
 
-        if (focusedOption.name === "query") {
-            
+        if (focusedOption.name === "query" || focusedOption.name.startsWith("movie-")) {
+
             let results: ApplicationCommandOptionChoiceData[] = [];
             let MAX = 10;
             let query = focusedOption.value;
@@ -219,35 +337,113 @@ const MovieCommand: Command = {
     },
     run: async (interaction: ChatInputCommandInteraction) => {
         let subcommand = interaction.options.getSubcommand(true);
-
+        
         if (subcommand === "search") {
+            await interaction.deferReply({ flags: [MessageFlags.Ephemeral] });
             let movieId = interaction.options.getString('query', true);
             let movie = await getMovieById(movieId);
-            if (!movie) return interaction.reply({ flags: [MessageFlags.Ephemeral], content: `Movie ID ${movieId} not found.` });
-            let directors = await getDirectorsByMovieId(movie.id.toString())
-            console.log("DIRECTORS", directors)
+            if (!movie) return interaction.editReply({ content: `Movie ID ${movieId} not found.` });
 
+            let movieContainer = await buildMovieContainer(movie);
 
-            let movieContainer = new TMComponentBuilder();
-            if (movie.backdrop_path) {
-                movieContainer.addMediaGallery([{ media: { url: `https://image.tmdb.org/t/p/w780${movie.backdrop_path}` } }])
-            }
-
-            if (movie.poster_path) {
-                movieContainer.addThumbnailAccessorySection(`# ${movie.title} (${movie.release_date.split("-")[0]})\n-# ${movie.genres.map(g => `${g.name}`).join(", ")} ${movie.adult ? `• **18+**` : ""}\n${movie.production_companies.length > 0 ? `\n-# **Studio${movie.production_companies.length === 1 ? "" : "s"}:** ${movie.production_companies.map(c => `\`${c.name}\``).join(" ")}` : ""}${directors.length > 0 ? `\n-# **Director${directors.length === 1 ? "" : "s"}:** ${directors.map(c => `${c.name}`).join(" ")}` : ""}`, `https://image.tmdb.org/t/p/w780${movie.poster_path}`)
-            } else {
-                movieContainer.addTextDisplay(`## ${movie.title}\n-# ${movie.release_date.split("-")[0]} • ${movie.genres.map(g => `${g.name}`).join(", ")} ${movie.adult ? `• **18+**` : ""}\n${movie.production_companies.length > 0 ? `\n-# **Studio${movie.production_companies.length === 1 ? "" : "s"}:** ${movie.production_companies.map(c => `\`${c.name}\``).join(" ")}` : ""}${directors.length > 0 ? `\n-# **Director${directors.length === 1 ? "" : "s"}:** ${directors.map(c => `${c.name}`).join(" ")}` : ""}`);
-            }
-            movieContainer.addSeparator(SeparatorSpacingSize.Small)
-            movieContainer.addTextDisplay(`${blockQuote(movie.overview || "No Overview Found")}`)
-            movieContainer.addTextDisplay(`\n\n-# [View on TMDB](https://themoviedb.org/movie/${movie.id})`)
-
-
-
-            interaction.reply({
+            interaction.editReply({
                 flags: [MessageFlags.IsComponentsV2], components: [movieContainer.buildContainer()
                 ]
             })
+
+        }
+
+        if (subcommand === "poll") {
+        await interaction.deferReply({ flags: [MessageFlags.Ephemeral] });
+            let movieIds: Record<string, string | null> = {
+                '1': interaction.options.getString('movie-1', true),
+                '2': interaction.options.getString('movie-2', true),
+                '3': interaction.options.getString('movie-3', false) || null,
+                '4': interaction.options.getString('movie-4', false) || null,
+                '5': interaction.options.getString('movie-5', false) || null,
+                '6': interaction.options.getString('movie-6', false) || null,
+                '7': interaction.options.getString('movie-7', false) || null,
+                '8': interaction.options.getString('movie-8', false) || null,
+                '9': interaction.options.getString('movie-9', false) || null,
+                '10': interaction.options.getString('movie-10', false) || null
+            }
+
+            let multiselect = interaction.options.getBoolean("allow_multiple_votes", true);
+            let duration = interaction.options.getNumber("poll_duration", true);
+
+            let movies: TMDBMovieFull[] = [];
+
+
+            let mvPromises = Promise.all(Object.values(movieIds).filter(v => v !== null).map(async v => {
+                if (v) {
+                    let movie = await getMovieById(v);
+                    if (movie && movie.title) return movie;
+                }
+            }))
+
+            movies = await mvPromises;
+
+            let promises = Promise.all(Object.values(movieIds).map(async v => {
+                if (v) {
+                    let movie = await getMovieById(v);
+                    if (movie) return { text: `${truncate(movie?.title, 45) || "No title found"} (${movie?.release_date.split("-")[0] || "0000"})` }
+                }
+            }))
+
+            let poll: PollData = {
+                question: {
+                    text: `Movie Poll (${movies.length} choices)`
+                },
+                allowMultiselect: multiselect,
+                duration,
+                layoutType: PollLayoutType.Default,
+                answers: []
+            }
+
+            poll.answers = await promises;
+            poll.answers = poll.answers.filter(a => a !== null && a !== undefined);
+
+            console.log("ANSWERS", poll.answers)
+
+            let channel = interaction.options.getChannel("channel", true) as TextChannel;
+
+            let replaceMsg = await channel.send({content: "### Creating Poll..."})
+
+            let sent = 0;
+            let polled = false;
+            let containers = [];
+
+            let pr = Promise.all(movies.map(async movie => {
+                console.log("PR", movie.title)
+                let container = await buildMovieContainer(movie, false);
+                return container.buildContainer();
+            }))
+
+            containers = await pr;
+
+            // movieId, messageUrl
+            let sentContainers: Record<string, string> = {};
+
+            containers.forEach((c, i) => {
+                channel.send({ components: [c], flags: [MessageFlags.IsComponentsV2] }).then(m => {
+                    sent += 1;
+                    sentContainers[movies[i].id.toString()] = m.url;
+                })
+            })
+
+            setInterval(() => {
+                if (sent === poll.answers.length && !polled) {
+                    polled = true;
+
+                    channel.send({ poll, content: `-# ${roleMention(config.roles.movie_nights)}\n## Movie Poll | Please vote below!\n-# ${userMention(interaction.user.id)} has created a poll with ${poll.answers.length} choices!\n### Movies\n${movies.map((m, i) => `> ${i+1}. [${m.title} (${m.release_date.split("-")[0]})](<${sentContainers[m.id.toString()] ? `${sentContainers[m.id.toString()]}` : `https://themoviedb.org/movie/${m.id}`}>)`).join("\n")}\n### ⬆️ Scroll up in this channel to view an overview for each movie\n\n-# **Voting Ends:** <t:${Math.floor((Date.now() + (((duration * 60) * 60) * 1000)) / 1000)}:R>` }).then(m => {
+                        interaction.editReply({ content: `Sent poll successfully: ${m.url}` })
+                        if (channel.id === interaction.channelId) interaction.followUp({ flags: [MessageFlags.Ephemeral], content: `Sent poll successfully: ${m.url}` })
+                        if(replaceMsg.editable) replaceMsg.edit({content: `# ⬇️ [Back to poll](<${m.url}>)`})
+                    }).catch(e => {
+                        interaction.editReply({ content: `Something went wrong: ${e?.message || "No error message"}` })
+                    })
+                }
+            }, 1e3)
 
         }
     }
