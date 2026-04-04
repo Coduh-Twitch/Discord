@@ -187,7 +187,7 @@ export const sendLevelUpMessage = async (member: GuildMember): Promise<void> => 
     let dbUser = await userModel.findOne({ id: member.id })
     const con = new TMComponentBuilder();
     try {
-        con.setAccentColor(await avg(member.displayAvatarURL()))
+        con.setAccentColor(await avg(member.displayAvatarURL()) as number)
     } catch (e) {
         con.setAccentColor(config.brand_color)
     }

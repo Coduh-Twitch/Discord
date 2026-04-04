@@ -67,7 +67,7 @@ const XPCommand: Command = {
                     xpProfile.xp = dbUser.xp;
                 }
 
-                const con = new TMComponentBuilder().setAccentColor(await avg(member.displayAvatarURL()) ? await avg(member.displayAvatarURL()) : config.brand_color);
+                const con = new TMComponentBuilder().setAccentColor(await avg(member.displayAvatarURL()) ? await avg(member.displayAvatarURL()) as number : config.brand_color);
                 con.addThumbnailAccessorySection(`# ${member.user.username} | XP\n**Level** | \`${xpProfile.level}${xpProfile.level === 10 ? " (MAX)" : ""}\` (${interaction.guild.roles.cache.get(config.roles.levels[xpProfile.level.toString()]) ? interaction.guild.roles.cache.get(config.roles.levels[xpProfile.level.toString()]).name : "No Role"})\n**XP Total** | \`${xpProfile.xp}\`${xpProfile.level !== 10 ? ` (${(calculateRequiredXP(xpProfile.level+1) - xpProfile.xp).toLocaleString()} XP to level ${xpProfile.level+1})` : ""}`, member.displayAvatarURL());
 
                 interaction.reply({flags: [MessageFlags.IsComponentsV2], components: [con.buildContainer()]})

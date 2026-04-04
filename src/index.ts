@@ -101,15 +101,16 @@ function makeHash(cmdlist: ApplicationCommandData[]): string {
     return hash;
 }
 
-export const avg = async (url: string): Promise<number> => {
+export const avg = async (url: string, hash: boolean = false): Promise<number | string> => {
     const ac = await getAverageColor(url);
     const str = ac.hex;
     console.log(str)
+    if(hash) return str as string;
     const noHash = str.split("#")[1];
     console.log(noHash)
     try {
 
-        return parseInt(`0x${noHash}`);
+        return parseInt(`0x${noHash}`) as number;
     } catch (e) {
         return config.brand_color;
     }

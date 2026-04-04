@@ -33,7 +33,7 @@ export default {
             if(dbUser && dbUser.shownWelcomeMessage) return; 
 
             const introChannel: TextChannel = member.guild.channels.cache.get(config.channels.hangout) as TextChannel;
-        const con = new TMComponentBuilder().setAccentColor(await avg(member.displayAvatarURL()));
+        const con = new TMComponentBuilder().setAccentColor(await avg(member.displayAvatarURL()) as number);
         let image = await memberWelcomeImage(new_member);
         con.addTextDisplay(`## Welcome to coduh's crib, ${userMention(new_member.id)}!`)
         if(image) con.addMediaGallery([{media: {url: image.url}}]);
