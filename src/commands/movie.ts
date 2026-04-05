@@ -1,10 +1,11 @@
-import { ApplicationCommandChoicesData, ApplicationCommandChoicesOption, ApplicationCommandOptionChoiceData, ApplicationCommandOptionType, AutocompleteInteraction, blockQuote, channelMention, ChannelType, ChatInputCommandInteraction, codeBlock, ContainerBuilder, MessageFlags, PermissionFlagsBits, Poll, PollData, PollLayoutType, roleMention, SeparatorSpacingSize, TextChannel, userMention } from "discord.js";
+import { ApplicationCommandChoicesData, ApplicationCommandChoicesOption, ApplicationCommandOptionChoiceData, ApplicationCommandOptionType, AutocompleteInteraction, blockQuote, channelMention, ChannelType, ChatInputCommandInteraction, codeBlock, ComponentType, ContainerBuilder, Events, MessageFlags, PermissionFlagsBits, Poll, PollData, PollLayoutType, roleMention, SeparatorSpacingSize, TextChannel, User, userMention } from "discord.js";
 import { Command } from "../classes/Command";
 import axios from "axios";
 import { TMComponentBuilder } from "../classes/ComponentBuilder";
 import { writeJSON, writeJSONSync } from "fs-extra";
 import { join } from "path";
 import config from "../config";
+import { movieModel } from "../models/movies";
 
 export interface TMDBGenre {
     id: number;
@@ -142,8 +143,41 @@ export interface TMDBCreditFull {
     };
 }
 
-async function getMovieById(movieId: string): Promise<TMDBMovieFull | null> {
+const truncate = (input, length: number = 5) => input.length > length ? `${input.substring(0, length)}...` : input;
+
+function formatMovieString(movie: Partial<TMDBMovieFull>, pretty: boolean = true, trunc: boolean = false, length: number = 50): string {
+    if (!movie.title) movie.title = "No Title Found"
+    if (trunc) movie.title = truncate(movie.title, length)
+    if (!movie.release_date) movie.release_date = "0000-00-00"
+    return `${pretty ? movie.title : movie.title.replaceAll(".", "-")} (${movie.release_date.split("-")[0]})`
+}
+
+export async function getMovieById(movieId: string, guildId: string): Promise<TMDBMovieFull | null> {
     let res = await axios.get(`${process.env.TMDB_API_URL}/movie/${movieId}`, { headers: { "Authorization": `Bearer ${process.env.TMDB_TOKEN}` } });
+    if (res.data && res.data?.id) {
+        let movie = res.data as TMDBMovieFull;
+        let formattedString: string = formatMovieString(movie, false);
+        let dbMovies = await movieModel.findOne({ guildId: guildId })
+        if (!dbMovies) {
+            let newMoviesModel = new movieModel({
+                guildId,
+                movies: {
+                    [`${formattedString}`]: movie.id.toString()
+                }
+            })
+
+            await newMoviesModel.save()
+
+            dbMovies = await movieModel.findOne({ guildId: guildId });
+        }
+
+        if (!dbMovies.get(`movies.${formattedString}`)) {
+            dbMovies.set(`movies.${formattedString}`, movie.id.toString());
+
+            await dbMovies.save();
+        }
+
+    }
     return res.data || null;
 }
 
@@ -163,9 +197,8 @@ async function getDirectorsByMovieId(movieId: string): Promise<TMDBCrewMember[]>
     return crew.filter(c => c.job === "Director");
 }
 
-const truncate = (input, length: number = 5) => input.length > length ? `${input.substring(0, length)}...` : input;
 
-async function buildMovieContainer(movie: TMDBMovieFull, withImages: boolean = true): Promise<TMComponentBuilder> {
+export async function buildMovieContainer(movie: TMDBMovieFull, withImages: boolean = true): Promise<TMComponentBuilder> {
     let directors = await getDirectorsByMovieId(movie.id.toString())
 
     let movieContainer = new TMComponentBuilder();
@@ -174,15 +207,94 @@ async function buildMovieContainer(movie: TMDBMovieFull, withImages: boolean = t
     }
 
     if (movie.poster_path) {
-        movieContainer.addThumbnailAccessorySection(`# ${movie.title} (${movie.release_date.split("-")[0]})\n-# ${movie.genres.map(g => `${g.name}`).join(", ")} ${movie.adult ? `• **18+**` : ""}\n${movie.production_companies.length > 0 ? `\n-# **Studio${movie.production_companies.length === 1 ? "" : "s"}:** ${movie.production_companies.map(c => `\`${c.name}\``).join(" ")}` : ""}${directors.length > 0 ? `\n-# **Director${directors.length === 1 ? "" : "s"}:** ${directors.map(c => `${c.name}`).join(" ")}` : ""}`, `https://image.tmdb.org/t/p/w780${movie.poster_path}`)
+        movieContainer.addThumbnailAccessorySection(`# ${formatMovieString(movie, true)}\n-# ${movie.genres.map(g => `${g.name}`).join(", ")} ${movie.adult ? `• **18+**` : ""}\n${movie.production_companies.length > 0 ? `\n-# **Studio${movie.production_companies.length === 1 ? "" : "s"}:** ${movie.production_companies.map(c => `\`${c.name}\``).join(" ")}` : ""}${directors.length > 0 ? `\n-# **Director${directors.length === 1 ? "" : "s"}:** ${directors.map(c => `${c.name}`).join(" ")}` : ""}`, `https://image.tmdb.org/t/p/w780${movie.poster_path}`)
     } else {
-        movieContainer.addTextDisplay(`# ${movie.title} (${movie.release_date.split("-")[0]})\n-# ${movie.genres.map(g => `${g.name}`).join(", ")} ${movie.adult ? `• **18+**` : ""}\n${movie.production_companies.length > 0 ? `\n-# **Studio${movie.production_companies.length === 1 ? "" : "s"}:** ${movie.production_companies.map(c => `\`${c.name}\``).join(" ")}` : ""}${directors.length > 0 ? `\n-# **Director${directors.length === 1 ? "" : "s"}:** ${directors.map(c => `${c.name}`).join(" ")}` : ""}`);
+        movieContainer.addTextDisplay(`# ${formatMovieString(movie, true)}\n-# ${movie.genres.map(g => `${g.name}`).join(", ")} ${movie.adult ? `• **18+**` : ""}\n${movie.production_companies.length > 0 ? `\n-# **Studio${movie.production_companies.length === 1 ? "" : "s"}:** ${movie.production_companies.map(c => `\`${c.name}\``).join(" ")}` : ""}${directors.length > 0 ? `\n-# **Director${directors.length === 1 ? "" : "s"}:** ${directors.map(c => `${c.name}`).join(" ")}` : ""}`);
     }
     movieContainer.addSeparator(SeparatorSpacingSize.Small)
     movieContainer.addTextDisplay(`${blockQuote(movie.overview || "No Overview Found")}`)
     movieContainer.addTextDisplay(`\n\n-# [View on TMDB](https://themoviedb.org/movie/${movie.id})`)
 
     return movieContainer;
+}
+
+export async function sendMoviePoll(interaction: ChatInputCommandInteraction | null, user: User, guildId: string, channel: TextChannel, movieIds: string[], multiselect: boolean = false, duration: 1 | 4 | 8 | 24 | 72 = 24) {
+    let movies: TMDBMovieFull[] = [];
+
+
+    let mvPromises = Promise.all(movieIds.filter(v => v !== null).map(async v => {
+        if (v) {
+            let movie = await getMovieById(v, guildId);
+            if (movie && movie.title) return movie;
+        }
+    }))
+
+    movies = await mvPromises;
+
+    let promises = Promise.all(Object.values(movieIds).map(async v => {
+        if (v) {
+            let movie = await getMovieById(v, guildId);
+            if (movie) return { text: `${formatMovieString(movie, true, true, 45)}` }
+        }
+    }))
+
+    let poll: PollData = {
+        question: {
+            text: `Movie Poll (${movies.length} choices)`
+        },
+        allowMultiselect: multiselect,
+        duration,
+        layoutType: PollLayoutType.Default,
+        answers: []
+    }
+
+    poll.answers = await promises;
+    poll.answers = poll.answers.filter(a => a !== null && a !== undefined);
+
+    console.log("ANSWERS", poll.answers)
+
+    // let channel = interaction.options.getChannel("channel", true) as TextChannel;
+
+    let replaceMsg = await channel.send({ content: "### Creating Poll..." })
+
+    let sent = 0;
+    let polled = false;
+    let containers = [];
+
+    let pr = Promise.all(movies.map(async movie => {
+        console.log("PR", movie.title)
+        let container = await buildMovieContainer(movie, false);
+        return container.buildContainer();
+    }))
+
+    containers = await pr;
+
+    // movieId, messageUrl
+    let sentContainers: Record<string, string> = {};
+
+    containers.forEach((c, i) => {
+        channel.send({ components: [c], flags: [MessageFlags.IsComponentsV2] }).then(m => {
+            sent += 1;
+            sentContainers[movies[i].id.toString()] = m.url;
+        })
+    })
+
+    setInterval(() => {
+        if (sent === poll.answers.length && !polled) {
+            polled = true;
+
+            channel.send({ poll, content: `-# ${roleMention(config.roles.movie_nights)}\n## Movie Poll | Please vote below!\n-# ${userMention(user.id)} has created a poll with ${poll.answers.length} choices!\n### Movies\n${movies.map((m, i) => `> ${i + 1}. [${formatMovieString(m, true)}](<${sentContainers[m.id.toString()] ? `${sentContainers[m.id.toString()]}` : `https://themoviedb.org/movie/${m.id}`}>)`).join("\n")}\n### ⬆️ Scroll up in this channel to view an overview for each movie\n### ⬇️ Vote in the poll below! ⬇️\n\n-# **Voting Ends:** <t:${Math.floor((Date.now() + (((duration * 60) * 60) * 1000)) / 1000)}:R>` }).then(m => {
+                if (interaction && interaction.replied) interaction.editReply({ content: `Sent poll successfully: ${m.url}` })
+                if (interaction && channel.id === interaction.channelId) interaction.followUp({ flags: [MessageFlags.Ephemeral], content: `Sent poll successfully: ${m.url}` })
+                if (replaceMsg.editable) replaceMsg.edit({ content: `# ⬇️ [Back to poll](<${m.url}>)` })
+                setTimeout(async () => {
+                    if (m.poll) await m.poll.end()
+                }, 10e3)
+            }).catch(e => {
+                if(interaction) interaction.editReply({ content: `Something went wrong: ${e?.message || "No error message"}` })
+            })
+        }
+    }, 1e3)
 }
 
 const MovieCommand: Command = {
@@ -325,7 +437,7 @@ const MovieCommand: Command = {
 
             if (res?.results) res.results.forEach(async movie => {
 
-                if (results.length < MAX && (movie?.genre_ids || []).length > 0 && movie.id) results.push({ name: `${truncate(movie?.title, 90) || "No title found"} (${movie?.release_date.split("-")[0] || "0000"})`, value: `${movie.id}` })
+                if (results.length < MAX && (movie?.genre_ids || []).length > 0 && movie.id) results.push({ name: `${formatMovieString(movie, true, true, 90)}`, value: `${movie.id}` })
             })
 
             console.log("RESULTS", results);
@@ -337,11 +449,11 @@ const MovieCommand: Command = {
     },
     run: async (interaction: ChatInputCommandInteraction) => {
         let subcommand = interaction.options.getSubcommand(true);
-        
+
         if (subcommand === "search") {
             await interaction.deferReply({ flags: [MessageFlags.Ephemeral] });
             let movieId = interaction.options.getString('query', true);
-            let movie = await getMovieById(movieId);
+            let movie = await getMovieById(movieId, interaction.guildId);
             if (!movie) return interaction.editReply({ content: `Movie ID ${movieId} not found.` });
 
             let movieContainer = await buildMovieContainer(movie);
@@ -354,7 +466,9 @@ const MovieCommand: Command = {
         }
 
         if (subcommand === "poll") {
-        await interaction.deferReply({ flags: [MessageFlags.Ephemeral] });
+
+
+            await interaction.deferReply({ flags: [MessageFlags.Ephemeral] });
             let movieIds: Record<string, string | null> = {
                 '1': interaction.options.getString('movie-1', true),
                 '2': interaction.options.getString('movie-2', true),
@@ -368,82 +482,12 @@ const MovieCommand: Command = {
                 '10': interaction.options.getString('movie-10', false) || null
             }
 
+            let channel = interaction.options.getChannel("channel", true);
+
             let multiselect = interaction.options.getBoolean("allow_multiple_votes", true);
             let duration = interaction.options.getNumber("poll_duration", true);
 
-            let movies: TMDBMovieFull[] = [];
-
-
-            let mvPromises = Promise.all(Object.values(movieIds).filter(v => v !== null).map(async v => {
-                if (v) {
-                    let movie = await getMovieById(v);
-                    if (movie && movie.title) return movie;
-                }
-            }))
-
-            movies = await mvPromises;
-
-            let promises = Promise.all(Object.values(movieIds).map(async v => {
-                if (v) {
-                    let movie = await getMovieById(v);
-                    if (movie) return { text: `${truncate(movie?.title, 45) || "No title found"} (${movie?.release_date.split("-")[0] || "0000"})` }
-                }
-            }))
-
-            let poll: PollData = {
-                question: {
-                    text: `Movie Poll (${movies.length} choices)`
-                },
-                allowMultiselect: multiselect,
-                duration,
-                layoutType: PollLayoutType.Default,
-                answers: []
-            }
-
-            poll.answers = await promises;
-            poll.answers = poll.answers.filter(a => a !== null && a !== undefined);
-
-            console.log("ANSWERS", poll.answers)
-
-            let channel = interaction.options.getChannel("channel", true) as TextChannel;
-
-            let replaceMsg = await channel.send({content: "### Creating Poll..."})
-
-            let sent = 0;
-            let polled = false;
-            let containers = [];
-
-            let pr = Promise.all(movies.map(async movie => {
-                console.log("PR", movie.title)
-                let container = await buildMovieContainer(movie, false);
-                return container.buildContainer();
-            }))
-
-            containers = await pr;
-
-            // movieId, messageUrl
-            let sentContainers: Record<string, string> = {};
-
-            containers.forEach((c, i) => {
-                channel.send({ components: [c], flags: [MessageFlags.IsComponentsV2] }).then(m => {
-                    sent += 1;
-                    sentContainers[movies[i].id.toString()] = m.url;
-                })
-            })
-
-            setInterval(() => {
-                if (sent === poll.answers.length && !polled) {
-                    polled = true;
-
-                    channel.send({ poll, content: `-# ${roleMention(config.roles.movie_nights)}\n## Movie Poll | Please vote below!\n-# ${userMention(interaction.user.id)} has created a poll with ${poll.answers.length} choices!\n### Movies\n${movies.map((m, i) => `> ${i+1}. [${m.title} (${m.release_date.split("-")[0]})](<${sentContainers[m.id.toString()] ? `${sentContainers[m.id.toString()]}` : `https://themoviedb.org/movie/${m.id}`}>)`).join("\n")}\n### ⬆️ Scroll up in this channel to view an overview for each movie\n\n-# **Voting Ends:** <t:${Math.floor((Date.now() + (((duration * 60) * 60) * 1000)) / 1000)}:R>` }).then(m => {
-                        interaction.editReply({ content: `Sent poll successfully: ${m.url}` })
-                        if (channel.id === interaction.channelId) interaction.followUp({ flags: [MessageFlags.Ephemeral], content: `Sent poll successfully: ${m.url}` })
-                        if(replaceMsg.editable) replaceMsg.edit({content: `# ⬇️ [Back to poll](<${m.url}>)`})
-                    }).catch(e => {
-                        interaction.editReply({ content: `Something went wrong: ${e?.message || "No error message"}` })
-                    })
-                }
-            }, 1e3)
+            await sendMoviePoll(interaction, interaction.user, interaction.guildId, channel as TextChannel, Object.values(movieIds), multiselect, duration as any);
 
         }
     }

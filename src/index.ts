@@ -227,7 +227,7 @@ async function initBot(c: Client) {
 
     }, 300e3)
 
-    let activities: ActivitiesOptions[] = [{ name: "coduh's stream", type: ActivityType.Watching }];
+    let activities: ActivitiesOptions[] = [{ name: "Watching coduh's stream", type: ActivityType.Custom }, { name: "calculating coduh's stream time", type: ActivityType.Custom }];
 
     setInterval(() => {
         let random = Math.floor(Math.random() * activities.length);
@@ -239,7 +239,6 @@ async function initBot(c: Client) {
 
     }, 60e3)
     // }
-    c.user.setPresence({ activities: [{ name: "coduh's stream", type: ActivityType.Watching }] })
     const user = (await twitchApiClient.users.getUserByName(process.env.TWITCH_CHANNEL_NAME))
 
     twitchWs.onStreamOnline(user.id, async (e) => {
