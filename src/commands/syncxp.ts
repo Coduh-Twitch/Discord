@@ -50,10 +50,7 @@ const SyncXpCommand: Command = {
     run: async (interaction: ChatInputCommandInteraction) => {
         let only_lower = interaction.options.getBoolean("only_lower", false) || false;
 
-        let players = await getMee6Leaderboard(
-            "834901822317002773"
-
-        );
+        let players = await getMee6Leaderboard(config.guild);
         if (players.length === 0) return interaction.reply({ flags: [MessageFlags.Ephemeral], content: `Could not find XP data for the specified server ID.` })
 
         if (only_lower) {

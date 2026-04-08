@@ -16,7 +16,9 @@ const config = {
         setups: dev_mode ? labsChannelId : "1485227800796332162",
         lfg: dev_mode ? labsChannelId : "1485227800796332162",
         logs: dev_mode ? labsChannelId : "1485227800796332162",
-        labs: labsChannelId
+        labs: labsChannelId,
+        announcements: "1491228014137053185",
+        movie_night_stage: "1491227901704671402"
     },
     emojis: {
         chow: "<:_:1489149500428779601>",

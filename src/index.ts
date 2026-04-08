@@ -1,4 +1,4 @@
-import { ActionRowBuilder, ActivitiesOptions, ActivityType, ApplicationCommandData, Attachment, AttachmentBuilder, AutoModerationActionExecution, AutoModerationActionType, AutoModerationRule, AutoModerationRuleTriggerType, ButtonBuilder, ButtonStyle, Channel, channelMention, ChatInputCommandInteraction, Client, codeBlock, Colors, EmbedBuilder, Events, Guild, GuildBan, GuildBasedChannel, GuildChannel, GuildMember, GuildTextBasedChannel, IntentsBitField, InteractionCallback, Message, MessageFlags, Poll, PollData, PollLayoutType, Role, SeparatorSpacingSize, TextBasedChannel, TextChannel, ThreadAutoArchiveDuration, userMention, VoiceChannel } from "discord.js";
+import { ActionRowBuilder, ActivitiesOptions, ActivityType, ApplicationCommandData, Attachment, AttachmentBuilder, AutoModerationActionExecution, AutoModerationActionType, AutoModerationRule, AutoModerationRuleTriggerType, ButtonBuilder, ButtonStyle, Channel, channelMention, ChatInputCommandInteraction, Client, codeBlock, Colors, EmbedBuilder, Events, Guild, GuildBan, GuildBasedChannel, GuildChannel, GuildMember, GuildTextBasedChannel, IntentsBitField, InteractionCallback, Message, MessageFlags, Partials, Poll, PollData, PollLayoutType, Role, SeparatorSpacingSize, TextBasedChannel, TextChannel, ThreadAutoArchiveDuration, userMention, VoiceChannel } from "discord.js";
 import "dotenv/config"
 import { readdir } from "fs";
 import { ensureFileSync, existsSync, readdirSync, readFileSync, readJSONSync, writeFileSync, writeJSONSync } from "fs-extra";
@@ -20,8 +20,18 @@ import os from "os"
 import diff_match_patch from "diff-match-patch";
 import { createPatch } from "diff";
 import { TemporaryFile } from "./classes/TemporaryFile";
+import { createAudioPlayer, generateDependencyReport, NoSubscriberBehavior } from "@discordjs/voice";
 
-export const client: Client = new Client({ intents: [IntentsBitField.Flags.Guilds, IntentsBitField.Flags.MessageContent, IntentsBitField.Flags.GuildPresences, IntentsBitField.Flags.GuildMembers, IntentsBitField.Flags.GuildMessages, IntentsBitField.Flags.AutoModerationConfiguration, IntentsBitField.Flags.AutoModerationExecution, IntentsBitField.Flags.GuildWebhooks] })
+// throw new Error(generateDependencyReport());
+
+export const client: Client = new Client({ intents: [IntentsBitField.Flags.Guilds, IntentsBitField.Flags.MessageContent, IntentsBitField.Flags.GuildPresences, IntentsBitField.Flags.GuildMembers, IntentsBitField.Flags.GuildMessages, IntentsBitField.Flags.AutoModerationConfiguration, IntentsBitField.Flags.AutoModerationExecution, IntentsBitField.Flags.GuildWebhooks, IntentsBitField.Flags.GuildVoiceStates], partials: [Partials.Message, Partials.GuildScheduledEvent, Partials.User] })
+
+export const player = createAudioPlayer({
+    debug: true,
+	behaviors: {
+		noSubscriber: NoSubscriberBehavior.Pause,
+	},
+});
 
 export const dev_mode = process.argv.includes("-dev");
 console.log("IS DEV MODE")
@@ -526,6 +536,8 @@ export function logEvent(event: Events, args: { [key: string]: any }) {
                     } else if (a.type === AutoModerationActionType.BlockMessage) {
                         statusStr.push(`- \`${actionDict[a.type.toString()]}\`${a.metadata.customMessage ? `\n\t\t- **Custom Response:**\n> \`${a.metadata.customMessage}\`` : ""}`)
                     } else if (a.type === AutoModerationActionType.SendAlertMessage) {
+                        statusStr.push(`- \`${actionDict[a.type.toString()]}\`${a.metadata.channelId ? ` - ${channelMention(a.metadata.channelId)}` : ""}`)
+                    } else if (a.type === AutoModerationActionType.BlockMemberInteraction) {
                         statusStr.push(`- \`${actionDict[a.type.toString()]}\`${a.metadata.channelId ? ` - ${channelMention(a.metadata.channelId)}` : ""}`)
                     }
                 })

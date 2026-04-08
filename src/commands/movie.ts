@@ -1,11 +1,12 @@
-import { ApplicationCommandChoicesData, ApplicationCommandChoicesOption, ApplicationCommandOptionChoiceData, ApplicationCommandOptionType, AutocompleteInteraction, blockQuote, channelMention, ChannelType, ChatInputCommandInteraction, codeBlock, ComponentType, ContainerBuilder, Events, MessageFlags, PermissionFlagsBits, Poll, PollData, PollLayoutType, roleMention, SeparatorSpacingSize, TextChannel, User, userMention } from "discord.js";
+import { ApplicationCommandChoicesData, ApplicationCommandChoicesOption, ApplicationCommandOptionChoiceData, ApplicationCommandOptionType, AutocompleteInteraction, blockQuote, ButtonInteraction, ButtonStyle, channelMention, ChannelType, ChatInputCommandInteraction, codeBlock, Colors, ComponentType, ContainerBuilder, Events, GuildScheduledEvent, GuildScheduledEventCreateOptions, GuildScheduledEventEntityType, GuildScheduledEventPrivacyLevel, GuildScheduledEventRecurrenceRuleFrequency, LabelBuilder, MessageFlags, ModalBuilder, ModalSubmitInteraction, PermissionFlagsBits, Poll, PollData, PollLayoutType, roleMention, SeparatorSpacingSize, StageChannel, TextChannel, TextInputBuilder, TextInputStyle, User, userMention } from "discord.js";
 import { Command } from "../classes/Command";
-import axios from "axios";
+import axios, { AxiosResponse } from "axios";
 import { TMComponentBuilder } from "../classes/ComponentBuilder";
 import { writeJSON, writeJSONSync } from "fs-extra";
 import { join } from "path";
 import config from "../config";
 import { movieModel } from "../models/movies";
+import { generateCustomId, parseCustomId } from "../utils/customIdUtils";
 
 export interface TMDBGenre {
     id: number;
@@ -291,10 +292,34 @@ export async function sendMoviePoll(interaction: ChatInputCommandInteraction | n
                     if (m.poll) await m.poll.end()
                 }, 10e3)
             }).catch(e => {
-                if(interaction) interaction.editReply({ content: `Something went wrong: ${e?.message || "No error message"}` })
+                if (interaction) interaction.editReply({ content: `Something went wrong: ${e?.message || "No error message"}` })
             })
         }
     }, 1e3)
+}
+
+export async function getContentWarningUrl(movie: Partial<TMDBMovieFull>): Promise<string | null> {
+    let res: AxiosResponse<any> | null;
+    if(!movie.imdb_id) {
+        console.log(`Searching for movie ${movie.title} with title`)
+        res = await axios.get(`${process.env.DOG_API_URL}/dddsearch?q=${encodeURIComponent(`${movie.title}`)}`, {headers: {'X-API-KEY': process.env.DOG_API_KEY, 'Accept': 'application/json'}});
+        console.log(res?.data);
+    } else {
+        console.log(`Searching for movie ${movie.title} with IMDB id ${movie.imdb_id}`)
+        res = await axios.get(`${process.env.DOG_API_URL}/dddsearch?imdb=${movie.imdb_id}`, {headers: {'X-API-KEY': process.env.DOG_API_KEY, 'Accept': 'application/json'}});
+        console.log(res?.data);
+    }
+
+    if(!res || !res.data || !res.data?.items) {
+        return null;
+    } else {
+        let results: any[] = res.data.items;
+        if(results.length <= 0) return null;
+
+        let firstResult = results.find(r => r.tmdbId !== null && r.tmdbId === movie.id) || results[0];
+
+        return `https://www.doesthedogdie.com/media/${firstResult.id}`
+    }
 }
 
 const MovieCommand: Command = {
@@ -311,6 +336,20 @@ const MovieCommand: Command = {
                 {
                     name: "query",
                     description: "What you are searching for",
+                    type: ApplicationCommandOptionType.String,
+                    autocomplete: true,
+                    required: true
+                }
+            ]
+        },
+        {
+            name: "create-event",
+            type: ApplicationCommandOptionType.Subcommand,
+            description: "Create a Movie Night event and send an announcement",
+            options: [
+                {
+                    name: "query",
+                    description: "The movie to create an event for",
                     type: ApplicationCommandOptionType.String,
                     autocomplete: true,
                     required: true
@@ -462,6 +501,114 @@ const MovieCommand: Command = {
                 flags: [MessageFlags.IsComponentsV2], components: [movieContainer.buildContainer()
                 ]
             })
+
+        }
+
+        if (subcommand === "create-event") {
+            let response = await interaction.deferReply({ flags: [MessageFlags.Ephemeral], withResponse: true });
+            let movieId = interaction.options.getString('query', true);
+            let movie = await getMovieById(movieId, interaction.guildId);
+            if (!movie) return interaction.editReply({ content: `Movie ID ${movieId} not found.` });
+
+            let interactionTimeout = 60e3;
+
+
+            async function movieContainerExt(with_interaction: boolean = false, expired: boolean = false): Promise<TMComponentBuilder> {
+                let movieContainer = await buildMovieContainer(movie);
+
+
+                if (with_interaction) {
+                    movieContainer.addSeparator()
+                    movieContainer.addTextDisplay(`### Create Movie Night event?`)
+                    movieContainer.addButtonAccessorySection(`Create event and send announcement? ->`, ButtonStyle.Success, "Yes", parseCustomId(generateCustomId(interaction, `correct-movie`)))
+                    movieContainer.addButtonAccessorySection(`Cancel your request? ->`, ButtonStyle.Danger, "Cancel", parseCustomId(generateCustomId(interaction, `cancel-movie`)))
+                    movieContainer.addSeparator();
+
+
+                }
+
+                if (!expired && with_interaction) {
+                    movieContainer.addTextDisplay(`-# This interaction expires <t:${Math.floor((Date.now() + interactionTimeout) / 1000)}:R>`)
+                } else if (expired) {
+                    movieContainer.addSeparator();
+                    movieContainer.addTextDisplay(`-# This interaction has expired`)
+                    movieContainer.setAccentColor(Colors.Red);
+                }
+
+                return movieContainer
+            }
+
+            interaction.editReply({
+                flags: [MessageFlags.IsComponentsV2], components: [(await movieContainerExt(true, false)).buildContainer()
+                ],
+            }).then(async m => {
+                let buttonPress: ButtonInteraction | null;
+                buttonPress = await response.resource.message.awaitMessageComponent({ componentType: ComponentType.Button, filter: i => i.user.id === interaction.user.id, time: interactionTimeout }).catch(e => null);
+
+                if (!buttonPress) {
+                    if (interaction.replied) interaction.editReply({ components: [(await movieContainerExt(false, true)).buildContainer()] });
+                } else {
+                    if(buttonPress.customId.includes("cancel")) {
+                        if (interaction.replied) interaction.editReply({ components: [(await movieContainerExt(false, true)).buildContainer()] });
+                        await buttonPress.reply({flags: [MessageFlags.Ephemeral], content: `Request Cancelled.`})
+                    }
+
+                    if(buttonPress.customId.includes("correct")) {
+                        let movieStage = interaction.guild.channels.cache.get(config.channels.movie_night_stage) as StageChannel;
+                        let announcementChannel = interaction.guild.channels.cache.get(config.channels.announcements);
+
+                        let modalTimeout = 120e3;
+
+
+                        let eventData: GuildScheduledEventCreateOptions = {
+                            entityType: GuildScheduledEventEntityType.StageInstance,
+                            channel: movieStage,
+                            name: `🍿 ${formatMovieString(movie, true, true, 90)}`,
+                            privacyLevel: GuildScheduledEventPrivacyLevel.GuildOnly,
+                            description: ``,
+                            reason: `Movie night created by ${interaction.user.username} (${interaction.user.id})`,
+                            scheduledStartTime: Date.now()
+                        }
+
+                        if(movie.backdrop_path) eventData.image = `https://image.tmdb.org/t/p/w780${movie.backdrop_path}`;
+
+                        let modal = new ModalBuilder().setTitle("Enter Start Time").addTextDisplayComponents([TMComponentBuilder.textDisplay(`## Having Trouble?`), TMComponentBuilder.textDisplay(`Head to [hammertime.cyou](https://hammertime.cyou) to get a timestamp, then paste it here.\n\n**Copy the timestamp that consists of numbers only. (</> icon)**`)]).setCustomId("modal");
+                        let label = new LabelBuilder().setLabel("Timestamp").setDescription("Please enter the event start timestamp").setTextInputComponent(new TextInputBuilder().setCustomId("modal-timestamp").setRequired(true).setPlaceholder(`${Date.now()}`).setMinLength(`${Math.floor(Date.now() / 1000)}`.length).setStyle(TextInputStyle.Short));
+                        modal.addLabelComponents(label);
+                        modal.addTextDisplayComponents(TMComponentBuilder.textDisplay(`This interaction expires <t:${Math.floor((Date.now() + modalTimeout) / 1000)}:R>`))
+
+                        await buttonPress.showModal(modal);
+                        
+                        let modalSubmit: ModalSubmitInteraction | null;
+                        modalSubmit = await buttonPress.awaitModalSubmit({time: modalTimeout}).catch(e => null);
+
+
+                        if(!modalSubmit) {
+                            if (interaction.replied) interaction.editReply({ components: [(await movieContainerExt(false, true)).buildContainer()] });
+                            if(buttonPress.isRepliable()) await buttonPress.reply({flags: [MessageFlags.Ephemeral], content: `Request Cancelled.`})
+                        } else {
+                            let timestamp = modalSubmit.fields.getTextInputValue("modal-timestamp");
+                            let dddUrl = await getContentWarningUrl(movie);
+
+                            eventData.scheduledStartTime = parseInt(timestamp) * 1000;
+                            eventData.description = `**Watch ${formatMovieString(movie, true)} with the community on <t:${Math.floor(eventData.scheduledStartTime / 1000)}:f>!**\n\n**Movie Overview**\n${movie.overview}${dddUrl ? `\n\n**Content/Trigger Warnings:** ${dddUrl}` : ""}`
+
+                            interaction.guild.scheduledEvents.create(eventData).then(async event => {
+                                modalSubmit.reply({flags: [MessageFlags.Ephemeral], content: `Successfully created event to begin <t:${Math.floor(event.scheduledStartTimestamp / 1000)}:R>`});
+                                if (interaction.replied) interaction.editReply({ components: [(await movieContainerExt(false, false)).buildContainer()] });
+                                if(announcementChannel.isSendable()) {
+                                    announcementChannel.send({flags: [MessageFlags.IsComponentsV2], components: [(await buildMovieContainer(movie, true)).buildContainer()]}).then(posterMsg => {
+                                        announcementChannel.send({content: `-# ${roleMention(config.roles.movie_nights)}\n# 🍿 ${formatMovieString(movie, true)}\n**Watch ${formatMovieString(movie, true)} with the community on <t:${Math.floor(event.scheduledStartTimestamp / 1000)}:f>!**\n\n**Movie Overview**\n${posterMsg.url}${dddUrl ? `\n\n**Content/Trigger Warnings:** <${dddUrl}>` : ""}\n\n### [View the Event and click __Interested__ to be notified when the movie starts!](${event.url})`})
+                                    })
+                                }
+                            });
+                        }
+
+                    }
+                }
+            })
+
+
 
         }
 
