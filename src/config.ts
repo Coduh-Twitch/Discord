@@ -18,7 +18,19 @@ const config = {
         logs: dev_mode ? labsChannelId : "1485227800796332162",
         labs: labsChannelId,
         announcements: "1491228014137053185",
-        movie_night_stage: "1491227901704671402"
+        movie_night_stage: "1491227901704671402",
+        media_channels: [
+            {
+                emojis: { // food
+                    up: "1443819361579045046",
+                    down: "💩"
+                },
+                id: "1492652051874713630"
+            },
+            {
+                id: "1492651333587566652"
+            }
+        ]
     },
     emojis: {
         chow: "<:_:1489149500428779601>",
@@ -38,6 +50,8 @@ const config = {
         "8": "<:_:1489149500428779601>",
         "9": "<:_:1489149500428779601>",
         "10": "<:_:1489149500428779601>",
+        upvote: "⬆️",
+        downvote: "⬇️"
     },
     roles: {
         members: dev_mode ? "1489808915129696256" : "1489808915129696256",

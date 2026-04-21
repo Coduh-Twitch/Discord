@@ -24,7 +24,7 @@ import { createAudioPlayer, generateDependencyReport, NoSubscriberBehavior } fro
 
 // throw new Error(generateDependencyReport());
 
-export const client: Client = new Client({ intents: [IntentsBitField.Flags.Guilds, IntentsBitField.Flags.MessageContent, IntentsBitField.Flags.GuildPresences, IntentsBitField.Flags.GuildMembers, IntentsBitField.Flags.GuildMessages, IntentsBitField.Flags.AutoModerationConfiguration, IntentsBitField.Flags.AutoModerationExecution, IntentsBitField.Flags.GuildWebhooks, IntentsBitField.Flags.GuildVoiceStates], partials: [Partials.Message, Partials.GuildScheduledEvent, Partials.User] })
+export const client: Client = new Client({ intents: [IntentsBitField.Flags.Guilds, IntentsBitField.Flags.MessageContent, IntentsBitField.Flags.GuildPresences, IntentsBitField.Flags.GuildMembers, IntentsBitField.Flags.GuildMessages, IntentsBitField.Flags.AutoModerationConfiguration, IntentsBitField.Flags.AutoModerationExecution, IntentsBitField.Flags.GuildWebhooks, IntentsBitField.Flags.GuildVoiceStates, IntentsBitField.Flags.GuildMessageReactions], partials: [Partials.Message, Partials.GuildScheduledEvent, Partials.User, Partials.Reaction] })
 
 export const player = createAudioPlayer({
     debug: true,
@@ -162,7 +162,6 @@ async function loadCommands(c: Client) {
     files.filter(f => f.endsWith(desiredExt)).forEach(file => {
         const cmd: Command = (require(join(__dirname, "commands", file))).default;
         const cmdName = cmd.name;
-        console.log(cmdName, cmd)
         if (!cmd) return console.log(`Didn't load command file ${file} because it's not formatted correctly.`)
         if (!cmd.enabled) return console.log(`Didn't load command file ${file} because it's disabled`)
         if (!cmd.run) return console.log(`Didn't load command file ${file} because it has no run method`)

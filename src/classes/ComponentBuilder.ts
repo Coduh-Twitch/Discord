@@ -1,4 +1,4 @@
-import { ActionRowBuilder, APIActionRowComponent, APIMessageComponentEmoji, APISelectMenuOption, AttachmentBuilder, BaseSelectMenuBuilder, ButtonBuilder, ButtonStyle, ChannelSelectMenuBuilder, ChannelType, ComponentBuilder, ContainerBuilder, ContainerComponentBuilder, FileBuilder, MediaGalleryBuilder, MediaGalleryItemBuilder, MediaGalleryItemData, MentionableSelectMenuBuilder, PartialEmoji, RGBTuple, Role, RoleSelectMenuBuilder, SectionBuilder, SelectMenuType, SeparatorBuilder, SeparatorSpacingSize, Snowflake, StringSelectMenuBuilder, TextDisplayBuilder, ThumbnailBuilder, UnfurledMediaItem, UnfurledMediaItemData } from "discord.js";
+import { ActionRowBuilder, APIActionRowComponent, APIMessageComponentEmoji, APISelectMenuOption, Attachment, AttachmentBuilder, BaseSelectMenuBuilder, ButtonBuilder, ButtonStyle, ChannelSelectMenuBuilder, ChannelType, ComponentBuilder, ContainerBuilder, ContainerComponentBuilder, FileBuilder, MediaGalleryBuilder, MediaGalleryItemBuilder, MediaGalleryItemData, MentionableSelectMenuBuilder, PartialEmoji, RGBTuple, Role, RoleSelectMenuBuilder, SectionBuilder, SelectMenuType, SeparatorBuilder, SeparatorSpacingSize, Snowflake, StringSelectMenuBuilder, TextDisplayBuilder, ThumbnailBuilder, UnfurledMediaItem, UnfurledMediaItemData } from "discord.js";
 import { createCustomId, generateCustomId, parseCustomId, TowerMaidenInteractionInfo } from "../utils/customIdUtils";
 
 export class TMComponentBuilder {
@@ -260,7 +260,7 @@ export class TMComponentBuilder {
     }
 
     // MUST UPLOAD THE FILE IN message.files AS WELL TO APPEAR IN CONTAINER!!!!!!!!!!!
-    addFile(file_url_or_attachment?: string | AttachmentBuilder): TMComponentBuilder {
+    addFile(file_url_or_attachment?: string | Attachment): TMComponentBuilder {
         let file: FileBuilder = null;
         if (typeof file_url_or_attachment === "string") {
             file = TMComponentBuilder.fileItem(file_url_or_attachment)

@@ -144,6 +144,154 @@ export interface TMDBCreditFull {
     };
 }
 
+export interface DogMoviePartial {
+    id: number;
+    name: string;
+    cleanName: string;
+    genre: string;
+    releaseYear: string;
+    legacyId: number;
+    legacyUserId: number;
+    umId: number | null;
+    legacyItemType: string;
+    newsletterDate: string | null;
+    createdAt: string;
+    updatedAt: string;
+    UserId: number;
+    ItemTypeId: number;
+    tmdbId: number;
+    imdbId: string | null;
+    backgroundImage: string;
+    posterImage: string;
+    tmdbResult: any;
+    overview: string;
+    itemType: {
+        id: number;
+        name: string;
+    };
+    itemTypeId: number;
+}
+interface DogMovieFullType {
+    id: number;
+    name: string;
+    picture: string;
+    slug: string;
+    verb: string;
+    pastTenseVerb: string;
+    index1: string;
+    index2: string;
+    position1: string;
+    position2: string;
+    position3: string;
+    sectionName: string;
+    overviewName: string;
+    createdAt: string;
+    updatedAt: string;
+}
+
+interface DogMovieFull {
+    id: number;
+    name: string;
+    cleanName: string;
+    cleanNameArticles: string;
+    altName: string | null;
+    genre: string | null;
+    releaseYear: string;
+    legacyId: number | null;
+    legacyUserId: number | null;
+    legacyItemType: string | null;
+    art: string | null;
+    umId: number | null;
+    tmdbId: number | null;
+    imdbId: string | null;
+    numRatings: number;
+    tmdbResult: any;
+    verifyAttempts: number;
+    backgroundImage: string | null;
+    posterImage: string | null;
+    overview: string | null;
+    review: string | null;
+    posterVerified: boolean;
+    backgroundVerified: boolean;
+    verified: boolean;
+    adult: boolean;
+    minStaffIndex1: number;
+    minStaffIndex2: number;
+    maxStaffIndex1: number;
+    maxStaffIndex2: number;
+    active: number;
+    createdAt: string;
+    updatedAt: string;
+    UserId: number | null;
+    ItemTypeId: number;
+    itemType: DogMovieFullType;
+    isPurchased: boolean;
+}
+
+interface DogMovieFullTopicCategory {
+    id: number;
+    name: string;
+    createdAt: string;
+    updatedAt: string;
+    TopicSuperCategoryId: number;
+}
+
+interface DogMovieFullTopic {
+    id: number;
+    name: string;
+    notName: string;
+    survivesName: string | null;
+    keywords: string | null;
+    description: string | null;
+    subtitle: string | null;
+    subtitleText: string | null;
+    subtitleUrl: string | null;
+    doesName: string;
+    listName: string;
+    image: string;
+    ordering: number;
+    demandOrder: number;
+    isSpoiler: boolean;
+    isVisible: boolean;
+    isSensitive: boolean;
+    smmwDescription: string;
+    legacyId: number | null;
+    supporters: number;
+    createdAt: string | null;
+    updatedAt: string;
+    TopicCategoryId: number;
+    TopicCategory: DogMovieFullTopicCategory;
+}
+
+interface DogMovieFullTopicStat {
+    yesSum: number;
+    noSum: number;
+    numComments: number;
+    TopicId: number;
+    ItemId: number;
+    RatingId: number | null;
+    commentUserIds: number[] | null;
+    hasUserComment: boolean;
+    voteSum: number | null;
+    comment: string | null;
+    isAnonymous: boolean | null;
+    username: string | null;
+    UserId: number | null;
+    topic: DogMovieFullTopic;
+    comments: any[];
+    index1: number;
+    index2: number;
+    doesName: string;
+    TopicCategory: DogMovieFullTopicCategory;
+    slug: string;
+    isFavorite?: boolean;
+}
+
+interface DogMovieFullRoot {
+    item: DogMovieFull;
+    topicItemStats: DogMovieFullTopicStat[];
+}
+
 const truncate = (input, length: number = 5) => input.length > length ? `${input.substring(0, length)}...` : input;
 
 function formatMovieString(movie: Partial<TMDBMovieFull>, pretty: boolean = true, trunc: boolean = false, length: number = 50): string {
@@ -298,7 +446,7 @@ export async function sendMoviePoll(interaction: ChatInputCommandInteraction | n
     }, 1e3)
 }
 
-export async function getContentWarningUrl(movie: Partial<TMDBMovieFull>): Promise<string | null> {
+export async function getContentWarningUrl(movie: Partial<TMDBMovieFull>, getId: boolean = false): Promise<string | null> {
     let res: AxiosResponse<any> | null;
     if(!movie.imdb_id) {
         console.log(`Searching for movie ${movie.title} with title`)
@@ -317,9 +465,35 @@ export async function getContentWarningUrl(movie: Partial<TMDBMovieFull>): Promi
         if(results.length <= 0) return null;
 
         let firstResult = results.find(r => r.tmdbId !== null && r.tmdbId === movie.id) || results[0];
+        if(getId) return firstResult.id;
 
         return `https://www.doesthedogdie.com/media/${firstResult.id}`
     }
+}
+
+export async function getFlashingLightWarning(movie: Partial<TMDBMovieFull>): Promise<{flash: boolean; comment: string | null;}> {
+    let def = {flash: false, comment: null};
+    let contentWarningId = await getContentWarningUrl(movie, true);
+    if(!contentWarningId) return def;
+
+    let res = await axios.get(`${process.env.DOG_API_URL}/media/${contentWarningId}`, {headers: {'X-API-KEY': process.env.DOG_API_KEY, 'Accept': 'application/json'}});
+    if(!res.data || !res.data?.topicItemStats) return def;
+    let result: DogMovieFullRoot = res.data;
+
+    let topics = result.topicItemStats;
+    let flashingTopic = topics.find(t => t.topic.id === 167);
+    let yes = flashingTopic.yesSum;
+    let no = flashingTopic.noSum;
+
+    if(yes > no) {
+        let comment = flashingTopic.comments.sort((a, b) => b.voteSum - a.voteSum)?.[0]?.comment || null;
+
+        return {flash: true, comment};
+    } else {
+        return def;
+    }
+
+
 }
 
 const MovieCommand: Command = {
@@ -589,6 +763,7 @@ const MovieCommand: Command = {
                         } else {
                             let timestamp = modalSubmit.fields.getTextInputValue("modal-timestamp");
                             let dddUrl = await getContentWarningUrl(movie);
+                            let flashWarning = await getFlashingLightWarning(movie);
 
                             eventData.scheduledStartTime = parseInt(timestamp) * 1000;
                             eventData.description = `**Watch ${formatMovieString(movie, true)} with the community on <t:${Math.floor(eventData.scheduledStartTime / 1000)}:f>!**\n\n**Movie Overview**\n${movie.overview}${dddUrl ? `\n\n**Content/Trigger Warnings:** ${dddUrl}` : ""}`
@@ -598,7 +773,7 @@ const MovieCommand: Command = {
                                 if (interaction.replied) interaction.editReply({ components: [(await movieContainerExt(false, false)).buildContainer()] });
                                 if(announcementChannel.isSendable()) {
                                     announcementChannel.send({flags: [MessageFlags.IsComponentsV2], components: [(await buildMovieContainer(movie, true)).buildContainer()]}).then(posterMsg => {
-                                        announcementChannel.send({content: `-# ${roleMention(config.roles.movie_nights)}\n# 🍿 ${formatMovieString(movie, true)}\n**Watch ${formatMovieString(movie, true)} with the community on <t:${Math.floor(event.scheduledStartTimestamp / 1000)}:f>!**\n\n**Movie Overview**\n${posterMsg.url}${dddUrl ? `\n\n**Content/Trigger Warnings:** <${dddUrl}>` : ""}\n\n### [View the Event and click __Interested__ to be notified when the movie starts!](${event.url})`})
+                                        announcementChannel.send({content: `-# ${roleMention(config.roles.movie_nights)}\n# 🍿 ${formatMovieString(movie, true)}\n**Watch ${formatMovieString(movie, true)} with the community on <t:${Math.floor(event.scheduledStartTimestamp / 1000)}:f>!**\n\n**Movie Overview**\n${posterMsg.url}${dddUrl ? `\n\n**Content Warnings:** <${dddUrl}>` : ""}${flashWarning.flash ? `\n\n### ⚠️ Flashing Lights Warning${flashWarning.comment ? `\n-# Comment from DDD user:\n> ${flashWarning.comment}` : ""}` : ""}\n\n### [View the Event and click __Interested__ to be notified when the movie starts!](${event.url})`})
                                     })
                                 }
                             });

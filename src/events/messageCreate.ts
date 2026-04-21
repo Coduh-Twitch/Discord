@@ -4,6 +4,7 @@ import { dev_mode } from "..";
 import { userModel } from "../models/user";
 import { movieModel } from "../models/movies";
 import { buildMovieContainer, getMovieById, sendMoviePoll } from "../commands/movie";
+import config from "../config";
 
 export default {
     enabled: true,
@@ -43,6 +44,7 @@ export default {
                                 },10e3)
                         } else {
                             message.channel.send(`**We have a winner!**\n### ${topAnswer.text} (${topAnswer.voteCount})`)
+                            
                         }
                     }
                 } else return;
@@ -50,6 +52,18 @@ export default {
         }
         if(message.author.bot) return;
         if(!dev_mode && (message.content.length < 5)) return;
+
+        if(message.attachments.size > 0) {
+            if(config.channels.media_channels.some(c => c.id === message.channelId)) {
+                let channelData = config.channels.media_channels.find(c => c.id === message.channelId)
+                let upReact = channelData?.emojis ? channelData.emojis.up : config.emojis.upvote;
+                let downReact = channelData?.emojis ? channelData.emojis.down : config.emojis.downvote;
+
+                message.react(upReact).then(m => {
+                    message.react(downReact);
+                })
+            }
+        }
 
         await addXP(message.member, message.content);
         await userModel.findOneAndUpdate({id: message.author.id}, {lastMessageTimestamp: Date.now()})
