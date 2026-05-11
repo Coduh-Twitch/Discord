@@ -13,7 +13,6 @@
         "moduleResolution": "NodeNext",
         "module": "NodeNext",
         "target": "ES2021",
-        "downlevelIteration": true,
         "lib": ["ES2021"]
     },
     "include": ["./src/**/*"],

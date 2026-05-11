@@ -661,6 +661,7 @@ const MovieCommand: Command = {
         }
     },
     run: async (interaction: ChatInputCommandInteraction) => {
+        if(!interaction.guild || !interaction.guildId) return;
         let subcommand = interaction.options.getSubcommand(true);
 
         if (subcommand === "search") {
@@ -688,7 +689,7 @@ const MovieCommand: Command = {
 
 
             async function movieContainerExt(with_interaction: boolean = false, expired: boolean = false): Promise<TMComponentBuilder> {
-                let movieContainer = await buildMovieContainer(movie);
+                let movieContainer = await buildMovieContainer(movie as TMDBMovieFull);
 
 
                 if (with_interaction) {
@@ -716,6 +717,7 @@ const MovieCommand: Command = {
                 flags: [MessageFlags.IsComponentsV2], components: [(await movieContainerExt(true, false)).buildContainer()
                 ],
             }).then(async m => {
+                if(!response.resource?.message) return;
                 let buttonPress: ButtonInteraction | null;
                 buttonPress = await response.resource.message.awaitMessageComponent({ componentType: ComponentType.Button, filter: i => i.user.id === interaction.user.id, time: interactionTimeout }).catch(e => null);
 
