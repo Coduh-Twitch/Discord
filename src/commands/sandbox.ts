@@ -1,4 +1,4 @@
-import { ApplicationCommandOptionType, AttachmentBuilder, ChatInputCommandInteraction, Events, MessageFlags, PermissionFlagsBits, TextBasedChannel, User, userMention, VoiceBasedChannel } from "discord.js";
+import { ApplicationCommandOptionType, AttachmentBuilder, blockQuote, ChatInputCommandInteraction, Colors, Events, MessageFlags, PermissionFlagsBits, TextBasedChannel, User, userMention, VoiceBasedChannel } from "discord.js";
 import { Command } from "../classes/Command";
 import { Canvas, CanvasGradient, CanvasRenderingContext2D, createCanvas, Image } from "canvas";
 import { TMComponentBuilder } from "../classes/ComponentBuilder";
@@ -88,7 +88,16 @@ const SandboxCommand: Command = {
             voiceConnection.subscribe(player);
             joinedChannel = m.voice.channel;
             voiceHost = interaction.user;
-            if(joinedChannel.isSendable()) joinedChannel.send({content: `👋 **Hello!**`})
+
+            let sessionBegin = new TMComponentBuilder();
+            sessionBegin.setAccentColor(Colors.Green);
+            sessionBegin.addTextDisplay(`## TTS Session Started\n-# ${userMention(voiceHost.id)} has started a TTS session in this channel.`)
+            sessionBegin.addSeparator();
+            sessionBegin.addTextDisplay(`### TTS Commands\n${blockQuote(`- </tts say:${interaction.commandId}> - *Speak through TTS*\n- </tts leave:${interaction.commandId}> - *${userMention(voiceHost.id)} or server staff may end this TTS session*`)}`)
+            sessionBegin.addSeparator()
+            sessionBegin.addTextDisplay(`Session started <t:${Math.floor(Date.now() / 1000)}:R>`)
+
+            if(joinedChannel.isSendable()) joinedChannel.send({flags: [MessageFlags.IsComponentsV2], components: [sessionBegin.buildContainer()]})
 
             
 
@@ -118,7 +127,14 @@ const SandboxCommand: Command = {
                     voiceConnection.disconnect()
                     voiceConnection.destroy()
                     voiceConnection = null;
-                    if(joinedChannel && joinedChannel.isSendable()) joinedChannel.send({content: `**Goodbye! 👋**`})
+
+                    let sessionEnd = new TMComponentBuilder();
+                    sessionEnd.setAccentColor(Colors.Red);
+                    sessionEnd.addTextDisplay(`## TTS Session Ended\n-# ${userMention(interaction.user.id)} has ended the TTS session in this channel.`)
+                    sessionEnd.addSeparator()
+                    sessionEnd.addTextDisplay(`Session ended <t:${Math.floor(Date.now() / 1000)}:R>`)
+
+                    if(joinedChannel && joinedChannel.isSendable()) joinedChannel.send({flags: [MessageFlags.IsComponentsV2], components: [sessionEnd.buildContainer()]})
                     joinedChannel = null;
                 }
             })
