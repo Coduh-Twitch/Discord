@@ -20,7 +20,8 @@ export default {
                 lastMessageTimestamp: Date.now(),
                 level: 0,
                 xp: 0,
-                shownWelcomeMessage: true
+                shownWelcomeMessage: true,
+                favorite_movies: []
             })
 
             try {

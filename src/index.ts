@@ -236,7 +236,14 @@ async function initBot(c: Client) {
 
     }, 300e3)
 
-    let activities: ActivitiesOptions[] = [{ name: "Watching coduh's stream", type: ActivityType.Custom }, { name: "calculating coduh's stream time", type: ActivityType.Custom }];
+    let activities: ActivitiesOptions[] = [{ name: "Watching coduh's stream", type: ActivityType.Custom }, { name: "calculating coduh's stream time", type: ActivityType.Custom }, { name: "bringing my own botox", type: ActivityType.Custom }];
+
+    let random = Math.floor(Math.random() * activities.length);
+
+        let act = activities[random];
+        if (!act) act = activities[0];
+
+        c.user.setPresence({ activities: [act] });
 
     setInterval(() => {
         let random = Math.floor(Math.random() * activities.length);

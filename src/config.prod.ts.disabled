@@ -1,68 +1,66 @@
 
-const labsChannelId = `1427078759525388360`;
+const labsChannelId = `1504011572459343903`;
 const dev_mode = process.argv.includes("-dev");
 
 const config = {
+    coduh: "479563592903950347",
     polls_enabled: false,
     guild: dev_mode ? process.env.DEV_GUILD_ID : process.env.GUILD_ID,
-    brand_color: 0x79b050,
+    valid_guilds: ["1032419712950349895", "834901822317002773"], // dev - coduh
+    brand_color: 0x256F81,
     channels: {
-        hangout: dev_mode ? labsChannelId : "1332463364538110055",
-        new_videos: dev_mode ? labsChannelId : "1391159162716688525",
-        rules: dev_mode ? labsChannelId : "1421354750221484042",
-        about: dev_mode ? labsChannelId : "1421354883012886579",
-        streams: dev_mode ? labsChannelId : "1421355207782170746",
-        pets: dev_mode ? labsChannelId : "1421357593615532164",
-        setups: dev_mode ? labsChannelId : "1421356137047003306",
-        lfg: dev_mode ? labsChannelId : "1421356804071493693",
-        logs: dev_mode ? labsChannelId : "1421358478546567199",
-        labs: labsChannelId
+        hangout: dev_mode ? labsChannelId : "834901822988615732",
+        new_videos: dev_mode ? labsChannelId : "981083290314371103",
+        rules: dev_mode ? labsChannelId : "834901822757666822",
+        about: dev_mode ? labsChannelId : "834901822757666824",
+        streams: dev_mode ? labsChannelId : "981083290314371103",
+        pets: dev_mode ? labsChannelId : "1168435948841861140",
+        logs: dev_mode ? labsChannelId : "1504011572459343903",
+        labs: labsChannelId,
+        announcements: "834901822757666824",
+        movie_night_stage: "1491962302411571240",
+        media_channels: [
+            {
+                emojis: { // food
+                    up: "🔥",
+                    down: "💩"
+                },
+                id: "1078928174949335061"
+            }
+        ]
     },
     emojis: {
-        chow: "<:_:1421359802323304580>",
-        dance: "<:_:1421359803514490921>",
-        lol: "<:_:1421359804743684197>",
-        instagram: "<:_:1421359946142056528>",
-        tiktok: "<:_:1421359944871051345>",
-        twitch: "<:_:1421359943759564872>",
-        youtube: "<:_:1421359942522376223>",
-        "1": "<:_:1421359675957579786>",
-        "2": "<:_:1421359715471851602>",
-        "3": "<:_:1421359672970969119>",
-        "4": "<:_:1421359671612018899>",
-        "5": "<:_:1421359670567895101>",
-        "6": "<:_:1421359669460336802>",
-        "7": "<:_:1421359668118290452>",
-        "8": "<:_:1421359667006804029>",
-        "9": "<:_:1421359665639461064>",
-        "10": "<:_:1421359664561389619>",
+        upvote: "⬆️",
+        downvote: "⬇️"
     },
     roles: {
-        members: dev_mode ? "1421347892010025013" : "1421348907316809789",
+        members: dev_mode ? "1489808915129696256" : "1485414294978953326",
+        movie_nights: dev_mode ? "1489939664679735386" : "1504011286206353468",
         levels: {
-            "1": "1421348905756397678",
-            "2": "1421348905219522692",
-            "3": "1421348904653295656",
-            "4": "1421348903957299250",
-            "5": "1421348903592263730",
-            "6": "1421348902849871914",
-            "7": "1421348490973413517",
-            "8": "1421349754234863737",
-            "9": "1421349753819631698",
-            "10": "1421349754826391713",
+            "1": "1504010741517123604", // 24th Place
+            "2": "1504010738845618318", // Intermission Lover
+            "3": "1504010736295481475", // 8,000 VR
+            "4": "1504010733602734080", // Cracked
+            "5": "1504010730867785819", // Sweat
+            "6": "1504010728011464789", // Touch Grass
+            "7": "1504010723192344666", // Built Different
+            "8": "1504010720084492328", // Track Demon
+            "9": "1504010717265789059", // Kiyoh
+            "10": "1504010706645684286",// Frontrunner
         },
-        twitch_subscriber: "1421380129120190525" // temp (booster role)
+        twitch_subscriber: "981079569836679178"
     },
     level_perks: {
-        "6": "Slowed XP Degradation",
-        "7": "a Custom (SFW) Emoji",
-        "8": "a Custom (SFW) Soundboard",
-        "9": "a Custom (SFW) Role",
-        "10": ["VIP on Twitch", "a hoisted custom role"],
+        "6": "Slowed XP Degredation",
+        "7": "an Emoji of Your Choice",
+        "8": "a Custom Soundboard",
+        "9": "a Custom Role",
+        "10": ["a hoisted Custom Role", "VIP on Twitch"],
+        "50": "Coduh eats ass live on stream NO ONLYFANS!"
     },
     xp_multipliers: {
         base: 1,
-        sub: 1.2,
+        sub: 1.1,
     }
 }
 

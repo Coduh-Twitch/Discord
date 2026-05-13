@@ -44,6 +44,7 @@ const SandboxCommand: Command = {
         let m = interaction.guild.members.cache.get(interaction.user.id)
         let client = interaction.client;
         let content = interaction.options.getString('content', false);
+        // (await interaction.channel.messages.fetch(content)).poll.end()
         const tts = new EdgeTTS({
             voice: interaction.options.getString("voice", false) || "en-US-AriaNeural",
             lang: "en-US",

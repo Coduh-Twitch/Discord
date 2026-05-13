@@ -177,7 +177,7 @@ export class TMComponentBuilder {
     addButtonActionRow(components: ButtonBuilder[], id?: number): TMComponentBuilder {
         let row = TMComponentBuilder.actionRow();
         if (id) row.setId(id);
-        row.setComponents(components);
+        row.setComponents(components.filter(c => c !== null));
 
         this.container.addActionRowComponents(row);
 

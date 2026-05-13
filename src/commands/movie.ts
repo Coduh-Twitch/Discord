@@ -294,7 +294,7 @@ interface DogMovieFullRoot {
 
 const truncate = (input, length: number = 5) => input.length > length ? `${input.substring(0, length)}...` : input;
 
-function formatMovieString(movie: Partial<TMDBMovieFull>, pretty: boolean = true, trunc: boolean = false, length: number = 50): string {
+export function formatMovieString(movie: Partial<TMDBMovieFull>, pretty: boolean = true, trunc: boolean = false, length: number = 50): string {
     if (!movie.title) movie.title = "No Title Found"
     if (trunc) movie.title = truncate(movie.title, length)
     if (!movie.release_date) movie.release_date = "0000-00-00"
@@ -302,7 +302,8 @@ function formatMovieString(movie: Partial<TMDBMovieFull>, pretty: boolean = true
 }
 
 export async function getMovieById(movieId: string, guildId: string): Promise<TMDBMovieFull | null> {
-    let res = await axios.get(`${process.env.TMDB_API_URL}/movie/${movieId}`, { headers: { "Authorization": `Bearer ${process.env.TMDB_TOKEN}` } });
+    try {
+        let res = await axios.get(`${process.env.TMDB_API_URL}/movie/${movieId}`, { headers: { "Authorization": `Bearer ${process.env.TMDB_TOKEN}` } });
     if (res.data && res.data?.id) {
         let movie = res.data as TMDBMovieFull;
         let formattedString: string = formatMovieString(movie, false);
@@ -327,7 +328,10 @@ export async function getMovieById(movieId: string, guildId: string): Promise<TM
         }
 
     }
-    return res.data || null;
+    return res.data ? res.data : null;
+    } catch(e) {
+        return null;
+    }
 }
 
 async function getCrewByMovieId(movieId: string): Promise<TMDBCrewMember[]> {

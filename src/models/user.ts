@@ -7,7 +7,7 @@ export interface DBUser {
     lastMessageTimestamp: number;
     shownWelcomeMessage: boolean;
     deletion_flag?: number;
-
+    favorite_movies: string[];
 }
 
 const data = new Schema<DBUser>({
@@ -16,7 +16,8 @@ const data = new Schema<DBUser>({
     level: Number,
     lastMessageTimestamp: Number,
     shownWelcomeMessage: Boolean,
-    deletion_flag: Number
+    deletion_flag: Number,
+    favorite_movies: []
 })
 
 export const userModel = model("discordUser", data)

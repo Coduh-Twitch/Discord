@@ -3,6 +3,7 @@ import config from "../config"
 import { DBUser, userModel } from "../models/user"
 import { TMComponentBuilder } from "../classes/ComponentBuilder"
 import { avg, dev_mode } from ".."
+import { appEmoji } from "./emojiUtils"
 
 export const calculateGivenXP = (message_content: string, is_sub: boolean = false): number => {
     let amt: number = 0;
@@ -116,7 +117,8 @@ export const addXP = async (member: GuildMember, content: string): Promise<DBUse
             lastMessageTimestamp: Date.now(),
             level: 0,
             xp: 0,
-            shownWelcomeMessage: true
+            shownWelcomeMessage: true,
+            favorite_movies: []
         })
 
         try {
@@ -127,7 +129,7 @@ export const addXP = async (member: GuildMember, content: string): Promise<DBUse
             console.log(`Failed to create new user doc for ${member.id}`, e)
         }
     }
-    if (!dbUser === null) return null;
+    if (!dbUser) return null;
     let current_xp = dbUser.xp;
     let xp_to_give = calculateGivenXP(content, member.roles.cache.has(config.roles.twitch_subscriber));
     let new_xp = current_xp + xp_to_give;
@@ -153,7 +155,8 @@ export const removeXP = async (member: GuildMember, amount: number): Promise<DBU
             lastMessageTimestamp: Date.now(),
             level: 0,
             xp: 0,
-            shownWelcomeMessage: true
+            shownWelcomeMessage: true,
+            favorite_movies: []
         })
 
         try {
@@ -207,7 +210,10 @@ export const sendLevelUpMessage = async (member: GuildMember): Promise<void> => 
     if(rank === 2) rankEmoji = " 🥈"
     if(rank === 3) rankEmoji = " 🥉"
 
-    con.addTextDisplay(`## ${config.emojis.dance} <@${member.id}> Leveled Up!\nLevel ~~${dbUser.level - 1}~~ -> **${dbUser.level}** (Rank **#${rank}**${rankEmoji})${dbUser.level <= Object.values(config.roles.levels).length ? `\n\n**${member.user.username} unlocked the __${levelRole.name}__ role${levelPerk ? (typeof levelPerk === "object") ? `, and a choice between: ${(levelPerk as string[]).map(s => s).join(" or ")}` : (typeof levelPerk === "string") ? `, and ${levelPerk}` : "" : ""}!**` : ""}`)
+    con.addTextDisplay(`## ${await appEmoji(member.client, "coduhLove")} <@${member.id}> Leveled Up!\nLevel ~~${dbUser.level - 1}~~ -> **${dbUser.level}** (Rank **#${rank}**${rankEmoji})${dbUser.level <= Object.values(config.roles.levels).length ? `\n\n**${member.user.username} unlocked the __${levelRole.name}__ role${levelPerk ? (typeof levelPerk === "object") ? `, and a choice between: ${(levelPerk as string[]).map(s => s).join(" or ")}` : (typeof levelPerk === "string") ? `, and ${levelPerk}` : "" : ""}!**` : levelPerk ? `\n\n${member.user.username} unlocked ${levelPerk ? (typeof levelPerk === "object") ? 
+        `a choice between: **${(levelPerk as string[]).map(s => s).join(" or ")}**` 
+        : (typeof levelPerk === "string") ? 
+        ` **${levelPerk}**` : "" : ""}!` : ""}`)
 
     await channel.send({ flags: [MessageFlags.IsComponentsV2], components: [con.buildContainer()] })
     return;

@@ -37,10 +37,10 @@ export default {
                             let winnerMovieId: string | null = dbMovies.get(`movies.${topAnswer.text.replaceAll(".", "-")}`) || null;
                             let runnerUpMovieId: string | null = dbMovies.get(`movies.${runnerUp.text.replaceAll(".", "-")}`) || null;
 
-                            message.channel.send({content: `## We have a tie!\n**${topAnswer.text}** and **${runnerUp.text}** both got ${topAnswer.voteCount} vote${topAnswer.voteCount === 1 ? "" : "s"}!\n\nA new poll will be created shortly to choose a final winner`})
+                            if(winnerMovieId && runnerUpMovieId) message.channel.send({content: `## We have a tie!\n**${topAnswer.text}** and **${runnerUp.text}** both got ${topAnswer.voteCount} vote${topAnswer.voteCount === 1 ? "" : "s"}!\n\nA new poll will be created shortly to choose a final winner`})
 
                                 setTimeout(async () => {
-                                    await sendMoviePoll(null, message.author, message.guildId, message.channel as TextChannel, [winnerMovieId, runnerUpMovieId], false, 8)
+                                    if(winnerMovieId && runnerUpMovieId) await sendMoviePoll(null, message.author, message.guildId, message.channel as TextChannel, [winnerMovieId, runnerUpMovieId], false, 8)
                                 },10e3)
                         } else {
                             message.channel.send(`**We have a winner!**\n### ${topAnswer.text} (${topAnswer.voteCount})`)

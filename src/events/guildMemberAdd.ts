@@ -17,7 +17,8 @@ export default {
                 level: 0,
                 xp: 0,
                 shownWelcomeMessage: false,
-                deletion_flag: null
+                deletion_flag: null,
+                favorite_movies: []
             })
 
             try {
