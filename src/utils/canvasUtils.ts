@@ -17,19 +17,19 @@ function roundedImage(ctx, x, y, width, height, radius) {
     ctx.closePath();
 }
 
-function ordinal_suffix_of(i) {
+function ordinal_suffix_of(i: number) {
     let j = i % 10,
         k = i % 100;
     if (j === 1 && k !== 11) {
-        return i + "st";
+        return i.toLocaleString() + "st";
     }
     if (j === 2 && k !== 12) {
-        return i + "nd";
+        return i.toLocaleString() + "nd";
     }
     if (j === 3 && k !== 13) {
-        return i + "rd";
+        return i.toLocaleString() + "rd";
     }
-    return i + "th";
+    return i.toLocaleString() + "th";
 }
 
 export function memberWelcomeImage(m: GuildMember): Promise<{ attachment: AttachmentBuilder, url: string } | null> {
@@ -52,8 +52,8 @@ export function memberWelcomeImage(m: GuildMember): Promise<{ attachment: Attach
             ctx.clip();
             
             let gradient = ctx.createLinearGradient(w, h, w, h);
-            // gradient.addColorStop(0, `${memberAvgColor}9b`);
-            gradient.addColorStop(2, `#286E819b`);
+            gradient.addColorStop(2, `${memberAvgColor}9b`);
+            // gradient.addColorStop(2, `#286E819b`);
             gradient.addColorStop(10, "#19434F9b")
             
             ctx.fillStyle = "#2F2F2F";
@@ -98,13 +98,14 @@ export function memberWelcomeImage(m: GuildMember): Promise<{ attachment: Attach
                 ctx.fillText("Welcome to coduh's crib!", textHorizonalOffset, verticalOffset + lineHeight, 1300);
                 
                 ctx.font = "600 70px Open Sans";
-                ctx.fillStyle = "#78e1fdd7";
+                // ctx.fillStyle = "#78e1fdd7";
+                ctx.fillStyle = `${memberAvgColor}`
                 
                 ctx.fillText(`@${m.user.username}`, textHorizonalOffset, verticalOffset + (lineHeight * 3), 1300);
                 
                 ctx.font = "900 90px Open Sans";
                 ctx.fillStyle = "#ffffffcc";
-                ctx.fillText(`You're the ${ordinal_suffix_of(m.guild.memberCount)} member!`, textHorizonalOffset, verticalOffsetFrombottom - 20, 1300);
+                ctx.fillText(`You're the ${ordinal_suffix_of(m.guild.memberCount + 3883)} member!`, textHorizonalOffset, verticalOffsetFrombottom - 20, 1300);
                 
                 
                 let exported = canvas.toBuffer("image/png");

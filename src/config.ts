@@ -1,5 +1,5 @@
 
-const labsChannelId = `1485227800796332162`;
+const labsChannelId = `1504618200845910138`;
 const dev_mode = process.argv.includes("-dev");
 
 const config = {
@@ -9,22 +9,29 @@ const config = {
     valid_guilds: ["1032419712950349895", "834901822317002773"], // dev - coduh
     brand_color: 0x256F81,
     channels: {
-        hangout: dev_mode ? labsChannelId : "1485227800796332162",
-        new_videos: dev_mode ? labsChannelId : "1485227800796332162",
-        rules: dev_mode ? labsChannelId : "1485227800796332162",
-        about: dev_mode ? labsChannelId : "1485227800796332162",
-        streams: dev_mode ? labsChannelId : "1485227800796332162",
-        pets: dev_mode ? labsChannelId : "1485227800796332162",
-        setups: dev_mode ? labsChannelId : "1485227800796332162",
-        lfg: dev_mode ? labsChannelId : "1485227800796332162",
-        logs: dev_mode ? labsChannelId : "1485227800796332162",
+        hangout: "1485227800796332162",
+        rules: "1504618087717142628",
+        streams: "1504597672294875147",
+        logs: "1504617631632724088",
         labs: labsChannelId,
+        joins: "1504596794997342249",
+        jackbox: "1504597371923992737",
+        wordle: "1504597381583470754",
+        movie_suggestions: "1504597448075640872",
+        movie_polls: "1490473115795324968",
         announcements: "1491228014137053185",
         movie_night_stage: "1491227901704671402",
         media_channels: [
             {
                 emojis: null,
                 id: "1492651333587566652"
+            },
+            {
+                emojis: {
+                    up: "1443819361579045046",
+                    down: "💩"
+                },
+                id: "1492652051874713630"
             }
         ]
     },
@@ -35,6 +42,7 @@ const config = {
     roles: {
         members: dev_mode ? "1489808915129696256" : "1489808915129696256",
         movie_nights: dev_mode ? "1489939664679735386" : "1489939664679735386",
+        twitch_subscriber: "1485264523462967468",
         levels: {
             "1": "1485264201235562617", // 24th Place
             "2": "1485264196869558383", // Intermission Lover
@@ -47,7 +55,6 @@ const config = {
             "9": "1485264180847186054", // Kiyoh
             "10": "1485264172534206606",// Frontrunner
         },
-        twitch_subscriber: "1485264523462967468"
     },
     level_perks: {
         "6": "Slowed XP Degredation",

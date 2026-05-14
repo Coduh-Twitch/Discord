@@ -6,6 +6,11 @@ import { existsSync } from "fs-extra";
 import config from "../config";
 import { TemporaryFile } from "../classes/TemporaryFile";
 import { TMComponentBuilder } from "../classes/ComponentBuilder";
+import { parseCustomId } from "../utils/customIdUtils";
+import { appEmoji } from "../utils/emojiUtils";
+
+let roleReactors: Map<string, string> = new Map<string, string>();
+let roleReactCooldown = 3e3;
 
 export default {
     enabled: true,
@@ -51,9 +56,49 @@ export default {
 
 
         async function handleButtonPress(interaction: ButtonInteraction) {
+            if(interaction.customId.includes("role-react")) {
+                let customId = parseCustomId(interaction.customId);
+
+                if(customId.action.startsWith("role-react")) {
+                    let actionSplit = customId.action.split("-")
+                    let roleId = actionSplit[actionSplit.length - 1];
+                    let member = interaction.guild.members.cache.get(interaction.user.id);
+                    let role = interaction.guild.roles.cache.get(roleId);
+
+                    await interaction.deferReply({flags: [MessageFlags.Ephemeral]});
+
+                    if(roleReactors.has(member.id)) return interaction.editReply({content: `${await appEmoji(interaction.client, "nono")} Please wait a moment before pressing the button again.`})
+
+                    if(member.roles.cache.has(roleId)) {
+                        try {
+                            member.roles.remove(roleId)
+                            await interaction.editReply({content: `Removed "${role.name}"!`})
+                            roleReactors.set(member.id, role.id);
+                            setTimeout(() => {
+                                roleReactors.delete(member.id);
+                            },roleReactCooldown)
+                        } catch(e) {
+                            console.log(e)
+                            await interaction.editReply({content: `${await appEmoji(interaction.client, "noooo")} Something went wrong while removing "${role.name}"\n\nPlease try again!`})
+                        }
+
+                    } else {
+                        try {
+                            member.roles.add(roleId)
+                            await interaction.editReply({content: `Added "${role.name}"!`})
+                            roleReactors.set(member.id, role.id);
+                            setTimeout(() => {
+                                roleReactors.delete(member.id);
+                            },roleReactCooldown)
+                        } catch(e) {
+                            console.log(e)
+                            await interaction.editReply({content: `${await appEmoji(interaction.client, "noooo")} Something went wrong while adding "${role.name}"\n\nPlease try again!`})
+                        }
+                    }
+                }
+            }
+
             if (interaction.customId === "show-diff") {
-
-
                 let m = await interaction.channel.messages.fetch(interaction.message.id);
                 console.log(interaction.message.attachments)
                 if (!m || m?.attachments?.size <= 0) return;

@@ -19,6 +19,11 @@ const config = {
         labs: labsChannelId,
         announcements: "834901822757666824",
         movie_night_stage: "1491962302411571240",
+        joins: "834901822757666821",
+        jackbox: "1490272878107820103",
+        wordle: "1490471194049249371",
+        movie_suggestions: "1499677576602325092",
+        movie_polls: "",
         media_channels: [
             {
                 emojis: { // food
