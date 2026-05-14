@@ -207,6 +207,18 @@ const ProfileCommand: Command = {
             })
 
             buttonCol.on("collect", async button => {
+
+                if(button.customId.includes("done")) {
+                        await button.deferUpdate();
+
+                        let done = new TMComponentBuilder();
+                        done.setAccentColor(Colors.Green);
+                        done.addTextDisplay(`## Finished Re-Ordering Movies!`);
+
+                        interaction.editReply({components: [done.buildContainer()]});
+                        return;
+                    }
+
                 if(movie) {
                     await button.deferUpdate();
 
@@ -237,13 +249,7 @@ const ProfileCommand: Command = {
                         await interaction.editReply({components: [(await buildOrderContainer(ml, movie)).buildContainer()]})
                     }
 
-                    if(button.customId.includes("done")) {
-                        let done = new TMComponentBuilder();
-                        done.setAccentColor(Colors.Green);
-                        done.addTextDisplay(`## Finished Re-Ordering Movies!`);
-
-                        interaction.editReply({components: [done.buildContainer()]});
-                    }
+                    
                 } else {
                     await button.deferReply({flags: [MessageFlags.Ephemeral]});
                     await button.editReply({content: `Please select a movie first.`})
