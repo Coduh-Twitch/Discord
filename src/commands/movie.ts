@@ -440,9 +440,9 @@ export async function sendMoviePoll(interaction: ChatInputCommandInteraction | n
                 if (interaction && interaction.replied) interaction.editReply({ content: `Sent poll successfully: ${m.url}` })
                 if (interaction && channel.id === interaction.channelId) interaction.followUp({ flags: [MessageFlags.Ephemeral], content: `Sent poll successfully: ${m.url}` })
                 if (replaceMsg.editable) replaceMsg.edit({ content: `# ⬇️ [Back to poll](<${m.url}>)` })
-                setTimeout(async () => {
-                    if (m.poll) await m.poll.end()
-                }, 10e3)
+                // setTimeout(async () => {
+                //     if (m.poll) await m.poll.end()
+                // }, 10e3)
             }).catch(e => {
                 if (interaction) interaction.editReply({ content: `Something went wrong: ${e?.message || "No error message"}` })
             })

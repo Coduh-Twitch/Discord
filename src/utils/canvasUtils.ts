@@ -105,7 +105,7 @@ export function memberWelcomeImage(m: GuildMember): Promise<{ attachment: Attach
                 
                 ctx.font = "900 90px Open Sans";
                 ctx.fillStyle = "#ffffffcc";
-                ctx.fillText(`You're the ${ordinal_suffix_of(m.guild.memberCount + 3883)} member!`, textHorizonalOffset, verticalOffsetFrombottom - 20, 1300);
+                ctx.fillText(`You're the ${ordinal_suffix_of(m.guild.memberCount)} member!`, textHorizonalOffset, verticalOffsetFrombottom - 20, 1300);
                 
                 
                 let exported = canvas.toBuffer("image/png");
