@@ -118,7 +118,7 @@ const XPCommand: Command = {
                         
                         let member = interaction.guild.members.cache.get(u.id)
                         if(member && !member?.user?.bot) {
-                            return (`${await appEmoji(interaction.client, `${allUsers.indexOf(u) + 1 === 1 ? `crown` : allUsers.indexOf(u) + 1}${(allUsers.indexOf(u) + 1 === 10 || allUsers.indexOf(u) + 1 === 1) ? "" : "_"}`) || `${allUsers.indexOf(u) + 1}.`} **${member.displayName}** [${u.xp.toLocaleString()} XP]`)
+                            return (`${allUsers.indexOf(u) + 1 <= 3 ? `${"#".repeat(allUsers.indexOf(u) + 1)} ` : ""}${await appEmoji(interaction.client, `${allUsers.indexOf(u) + 1 === 1 ? `crown` : allUsers.indexOf(u) + 1}${(allUsers.indexOf(u) + 1 === 10 || allUsers.indexOf(u) + 1 === 1) ? "" : "_"}`) || `${allUsers.indexOf(u) + 1}.`} **${member.displayName}** [${u.xp.toLocaleString()} XP]`)
                         }
                     }));
                     

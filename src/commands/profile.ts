@@ -1,4 +1,4 @@
-import { ApplicationCommandOptionChoiceData, ApplicationCommandOptionType, AutocompleteInteraction, ButtonInteraction, ButtonStyle, ChatInputCommandInteraction, Colors, Component, ComponentType, MessageFlags, resolveColor, SelectMenuComponent, SeparatorSpacingSize } from "discord.js";
+import { ApplicationCommandOptionChoiceData, ApplicationCommandOptionType, AutocompleteInteraction, ButtonInteraction, ButtonStyle, ChatInputCommandInteraction, Colors, Component, ComponentType, Locale, MessageFlags, resolveColor, SelectMenuComponent, SeparatorSpacingSize } from "discord.js";
 import { Command } from "../classes/Command";
 import { TMComponentBuilder } from "../classes/ComponentBuilder";
 import { getAverageColor } from "fast-average-color-node";
@@ -404,6 +404,11 @@ const ProfileCommand: Command = {
         } else if (subcommand === "view") {
             await interaction.deferReply();
 
+            let numberFormatter = Intl.NumberFormat("en-US", {
+                notation: "compact",
+                maximumFractionDigits: 1
+            });
+
             let user = interaction.options.getUser("user", false) || interaction.user;
 
             let avatar = user.displayAvatarURL({ size: 512 });
@@ -416,7 +421,7 @@ const ProfileCommand: Command = {
 
             let member = interaction.guild?.members.cache.get(user.id);
 
-            container.addThumbnailAccessorySection(`## @${user.displayName}\n-# ${interaction.guild.ownerId === user.id ? `${await appEmoji(interaction.client, "coduhlove")} ` : ""}${user.bot ? "**BOT**" : user.username} ∙ ${user.id}\n\n${dbUser ? `📊 Level ${dbUser.level} - ✨ **${dbUser.xp.toLocaleString()}** XP` : ""}`, avatar)
+            container.addThumbnailAccessorySection(`## @${user.displayName}\n-# ${interaction.guild.ownerId === user.id ? `${await appEmoji(interaction.client, "coduhlove")} ` : ""}${user.bot ? "**BOT**" : user.username} ∙ ${user.id}\n\n${dbUser ? `🪙 **${dbUser.points.toLocaleString()}** Point${dbUser.points === 1 ? "" : "s"} - ✨ Level **${dbUser.level}** _(**${numberFormatter.format(dbUser.xp)}** XP)_` : ""}`, avatar)
 
             if (!user.bot) {
 

@@ -1,4 +1,4 @@
-import { ActionRowBuilder, ActivitiesOptions, ActivityType, ApplicationCommandData, Attachment, AttachmentBuilder, AutoModerationActionExecution, AutoModerationActionType, AutoModerationRule, AutoModerationRuleTriggerType, ButtonBuilder, ButtonStyle, Channel, channelMention, ChatInputCommandInteraction, Client, codeBlock, Colors, EmbedBuilder, Events, Guild, GuildBan, GuildBasedChannel, GuildChannel, GuildMember, GuildTextBasedChannel, IntentsBitField, InteractionCallback, Message, MessageFlags, Partials, Poll, PollData, PollLayoutType, Role, SeparatorSpacingSize, TextBasedChannel, TextChannel, ThreadAutoArchiveDuration, userMention, VoiceChannel } from "discord.js";
+import { ActionRowBuilder, ActivitiesOptions, ActivityType, ApplicationCommandData, Attachment, AttachmentBuilder, AutoModerationActionExecution, AutoModerationActionType, AutoModerationRule, AutoModerationRuleTriggerType, ButtonBuilder, ButtonStyle, Channel, channelMention, ChatInputCommandInteraction, Client, codeBlock, Colors, EmbedBuilder, Events, Guild, GuildBan, GuildBasedChannel, GuildChannel, GuildMember, GuildTextBasedChannel, IntentsBitField, InteractionCallback, Invite, Message, MessageFlags, Partials, Poll, PollData, PollLayoutType, Role, SeparatorSpacingSize, TextBasedChannel, TextChannel, ThreadAutoArchiveDuration, userMention, VoiceChannel } from "discord.js";
 import "dotenv/config"
 import { readdir } from "fs";
 import { ensureFileSync, existsSync, readdirSync, readFileSync, readJSONSync, writeFileSync, writeJSONSync } from "fs-extra";
@@ -32,6 +32,8 @@ export const player = createAudioPlayer({
 		noSubscriber: NoSubscriberBehavior.Pause,
 	},
 });
+
+export let incompatibleInvites: Map<string, Invite> = new Map();
 
 export const dev_mode = process.argv.includes("-dev");
 console.log("IS DEV MODE")
@@ -433,7 +435,7 @@ export function logContainer(heading: string, content: string, level: "DEFAULT" 
     return con;
 }
 
-export function logEvent(event: Events, args: { [key: string]: any }) {
+export async function logEvent(event: Events, args: { [key: string]: any }) {
     console.log(`Received event ${event}`)
     const logChannel = client.guilds.cache.get(config.guild).channels.cache.get(config.channels.logs) as TextChannel
     switch (event) {
@@ -449,6 +451,7 @@ export function logEvent(event: Events, args: { [key: string]: any }) {
         }
         case Events.GuildMemberRemove: {
             let member: GuildMember = args["member"];
+            if(member.guild.id !== config.guild) return;
             if (args["flag"]) {
                 logChannel.send({ flags: [MessageFlags.IsComponentsV2], components: [logContainer(`Member Left`, `${member.user.username} (${member.id})\n-# Their data will automatically be deleted (and all XP history lost) <t:${Math.floor(parseInt(args["flag"]) / 1000)}:R>`, "DANGER").buildContainer()] })
             } else {
@@ -473,17 +476,21 @@ export function logEvent(event: Events, args: { [key: string]: any }) {
         }
         case Events.GuildRoleCreate: {
             let role: Role = args["role"];
+            if(role.guild.id !== config.guild) return;
             logChannel.send({ flags: [MessageFlags.IsComponentsV2], components: [logContainer(`Role Created`, `${role.name}`, "DEFAULT").buildContainer()] })
             break;
         }
         case Events.GuildRoleDelete: {
             let role: Role = args["role"];
+            if(role.guild.id !== config.guild) return;
             logChannel.send({ flags: [MessageFlags.IsComponentsV2], components: [logContainer(`Role Deleted`, `${role.name}`, "DANGER").buildContainer()] })
             break;
         }
         case Events.GuildRoleUpdate: {
             let old_role: Role = args["old_role"];
             let new_role: Role = args["new_role"];
+
+            if(new_role.guild.id !== config.guild) return;
 
             let changes: { key: string, old_value: string, new_value: string }[] = [];
             let additions = [];
@@ -857,6 +864,15 @@ export function logEvent(event: Events, args: { [key: string]: any }) {
 
             break;
         }
+
+        case Events.GuildDelete: {
+            let guild: Guild = args["guild"];
+            let owner = await guild.fetchOwner();
+            let invite: Invite | null = incompatibleInvites.get(guild.id) || null;
+
+            logChannel.send({flags: [MessageFlags.IsComponentsV2], components: [logContainer(`Bot Left Guild`, `${guild.client.user.username} left a server, **${guild.name}** with ${guild.memberCount} member${guild.memberCount === 1 ? "" : "s"}\n-# ${guild.id} - Created <t:${Math.floor(guild.createdTimestamp / 1000)}:R>\n### Guild Owner\n${owner.user.username} - ${owner.user.id}${invite ? `\n### Invite Link (Bot-Generated)\nhttps://discord.com/invite/${invite.code}` : ""}`).buildContainer()]})
+            break;
+        }
     }
 }
 
@@ -904,19 +920,20 @@ process.on("SIGUSR2", exitHandler.bind(null, null, null))
 
 // LOGS
 
-client.on(Events.ChannelCreate, (channel) => { logEvent(Events.ChannelCreate, { channel: channel }) })
-client.on(Events.ChannelDelete, (channel) => { if (!channel.isDMBased()) logEvent(Events.ChannelDelete, { channel: channel }) })
-client.on(Events.ChannelUpdate, (old_channel, new_channel) => { logEvent(Events.ChannelUpdate, { old_channel, new_channel }) })
+client.on(Events.ChannelCreate, async (channel) => { await logEvent(Events.ChannelCreate, { channel: channel }) })
+client.on(Events.ChannelDelete, async (channel) => { if (!channel.isDMBased()) await logEvent(Events.ChannelDelete, { channel: channel }) })
+client.on(Events.ChannelUpdate, async (old_channel, new_channel) => { await logEvent(Events.ChannelUpdate, { old_channel, new_channel }) })
 // client.on(Events.GuildMemberRemove, (member) => { logEvent(Events.GuildMemberRemove, { member }) })
-client.on(Events.GuildUpdate, (old_guild, new_guild) => { logEvent(Events.GuildUpdate, { old_guild, new_guild }) })
-client.on(Events.GuildRoleCreate, (role) => { logEvent(Events.GuildRoleCreate, { role }) })
-client.on(Events.GuildRoleDelete, (role) => { logEvent(Events.GuildRoleDelete, { role }) })
-client.on(Events.GuildRoleUpdate, (old_role, new_role) => { logEvent(Events.GuildRoleUpdate, { old_role, new_role }) })
-client.on(Events.AutoModerationRuleCreate, (rule) => { logEvent(Events.AutoModerationRuleCreate, { rule }) })
-client.on(Events.AutoModerationRuleUpdate, (old_rule, new_rule) => { logEvent(Events.AutoModerationRuleUpdate, { old_rule, new_rule }) })
-client.on(Events.AutoModerationRuleDelete, (rule) => { logEvent(Events.AutoModerationRuleDelete, { rule }) })
-client.on(Events.AutoModerationActionExecution, (execution) => { logEvent(Events.AutoModerationActionExecution, { execution }) })
-client.on(Events.MessageUpdate, (old_message, new_message) => { logEvent(Events.MessageUpdate, { old_message, new_message }) })
+client.on(Events.GuildUpdate, async (old_guild, new_guild) => { await logEvent(Events.GuildUpdate, { old_guild, new_guild }) })
+client.on(Events.GuildRoleCreate, async (role) => { await logEvent(Events.GuildRoleCreate, { role }) })
+client.on(Events.GuildRoleDelete, async (role) => { await logEvent(Events.GuildRoleDelete, { role }) })
+client.on(Events.GuildRoleUpdate, async (old_role, new_role) => { await logEvent(Events.GuildRoleUpdate, { old_role, new_role }) })
+client.on(Events.AutoModerationRuleCreate, async (rule) => { await logEvent(Events.AutoModerationRuleCreate, { rule }) })
+client.on(Events.AutoModerationRuleUpdate, async (old_rule, new_rule) => { await logEvent(Events.AutoModerationRuleUpdate, { old_rule, new_rule }) })
+client.on(Events.AutoModerationRuleDelete, async (rule) => { await logEvent(Events.AutoModerationRuleDelete, { rule }) })
+client.on(Events.AutoModerationActionExecution, async (execution) => { await logEvent(Events.AutoModerationActionExecution, { execution }) })
+client.on(Events.MessageUpdate, async (old_message, new_message) => { await logEvent(Events.MessageUpdate, { old_message, new_message }) })
+client.on(Events.GuildDelete, async (guild) => { await logEvent(Events.GuildDelete, { guild }) })
 
 client.login(process.env.TOKEN)
 twitchWs.start()

@@ -67,6 +67,10 @@ const config = {
     xp_multipliers: {
         base: 1,
         sub: 1.1,
+    },
+    point_multipliers: {
+        base: 1,
+        sub: 1.1,
     }
 }
 

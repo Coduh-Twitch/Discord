@@ -5,6 +5,7 @@ import { userModel } from "../models/user";
 import { movieModel } from "../models/movies";
 import { buildMovieContainer, getMovieById, sendMoviePoll } from "../commands/movie";
 import config from "../config";
+import { addPoints } from "../utils/pointUtils";
 
 export default {
     enabled: true,
@@ -66,6 +67,7 @@ export default {
         }
 
         await addXP(message.member, message.content);
+        await addPoints(message.member, message.content);
         await userModel.findOneAndUpdate({id: message.author.id}, {lastMessageTimestamp: Date.now()})
     }
 }

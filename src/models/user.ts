@@ -5,6 +5,7 @@ export interface DBUser {
     xp: number;
     level: number;
     lastMessageTimestamp: number;
+    points: number;
     shownWelcomeMessage: boolean;
     deletion_flag?: number;
     favorite_movies: string[];
@@ -13,6 +14,10 @@ export interface DBUser {
 const data = new Schema<DBUser>({
     id: String,
     xp: Number,
+    points: {
+        type: Number,
+        default: 0
+    },
     level: Number,
     lastMessageTimestamp: Number,
     shownWelcomeMessage: Boolean,
