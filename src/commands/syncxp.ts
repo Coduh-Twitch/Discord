@@ -1,5 +1,5 @@
 import { ApplicationCommandOptionType, ChatInputCommandInteraction, Colors, ComponentType, MessageFlags, PermissionFlagsBits } from "discord.js";
-import { Command } from "../classes/Command";
+import { Command, CommandCategory, UserLevel } from "../classes/Command";
 import config from "../config";
 import axios from "axios";
 import { userModel } from "../models/user";
@@ -36,6 +36,8 @@ async function getMee6Leaderboard(guildId: string | null = null): Promise<MEE6Le
 
 const SyncXpCommand: Command = {
     enabled: true,
+    category: CommandCategory.DEV,
+    requiredRole: UserLevel.DEV,
     name: 'syncxp',
     description: "Sync all users' XP with the MEE6 API",
     defaultMemberPermissions: [PermissionFlagsBits.Administrator],

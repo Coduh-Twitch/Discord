@@ -1,5 +1,5 @@
 import { ChatInputCommandInteraction, Events, MessageFlags, PermissionFlagsBits } from "discord.js";
-import { Command } from "../classes/Command";
+import { Command, CommandCategory, UserLevel } from "../classes/Command";
 import { TMComponentBuilder } from "../classes/ComponentBuilder";
 import { version } from "../../package.json";
 import { dev_mode, reply, toHHMMSS } from "..";
@@ -8,6 +8,8 @@ import { hostname } from "os";
 
 const PingCommand: Command = {
     enabled: true,
+    category: CommandCategory.DEV,
+    requiredRole: UserLevel.DEV,
     name: "ping",
     description: "Pong?",
     defaultMemberPermissions: [PermissionFlagsBits.Administrator],

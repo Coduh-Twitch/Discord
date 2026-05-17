@@ -1,5 +1,5 @@
 import { ApplicationCommandOptionType, AttachmentBuilder, blockQuote, ChatInputCommandInteraction, cleanContent, Colors, Events, MessageFlags, PermissionFlagsBits, TextBasedChannel, User, userMention, VoiceBasedChannel } from "discord.js";
-import { Command } from "../classes/Command";
+import { Command, CommandCategory, UserLevel } from "../classes/Command";
 import { Canvas, CanvasGradient, CanvasRenderingContext2D, createCanvas, Image } from "canvas";
 import { TMComponentBuilder } from "../classes/ComponentBuilder";
 import { memberWelcomeImage } from "../utils/canvasUtils";
@@ -24,6 +24,7 @@ function utterPath(id: string, userId: string) {
 
 const TTSCommand: Command = {
     enabled: true,
+    category: CommandCategory.UTILITY,
     defaultMemberPermissions: [PermissionFlagsBits.SendVoiceMessages],
     name: "tts",
     description: "Text-to-speech commands",
@@ -32,6 +33,7 @@ const TTSCommand: Command = {
             name: "join",
             description: "Start a TTS session in your current voice channel",
             type: ApplicationCommandOptionType.Subcommand,
+            requiredRole: UserLevel.VIP
         },
         {
             name: "leave",

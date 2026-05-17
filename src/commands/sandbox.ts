@@ -1,5 +1,5 @@
 import { ApplicationCommandOptionType, AttachmentBuilder, blockQuote, ChatInputCommandInteraction, Colors, Events, MessageFlags, PermissionFlagsBits, TextBasedChannel, User, userMention, VoiceBasedChannel } from "discord.js";
-import { Command } from "../classes/Command";
+import { Command, CommandCategory, UserLevel } from "../classes/Command";
 import { Canvas, CanvasGradient, CanvasRenderingContext2D, createCanvas, Image } from "canvas";
 import { TMComponentBuilder } from "../classes/ComponentBuilder";
 import { memberWelcomeImage } from "../utils/canvasUtils";
@@ -23,6 +23,8 @@ function utterPath(id: string) {
 
 const SandboxCommand: Command = {
     enabled: true,
+    category: CommandCategory.DEV,
+    requiredRole: UserLevel.DEV,
     defaultMemberPermissions: [PermissionFlagsBits.Administrator],
     name: "sandbox",
     description: "Testing command",

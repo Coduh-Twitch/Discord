@@ -1,5 +1,5 @@
 import { ApplicationCommandOptionType, ButtonInteraction, ButtonStyle, ChatInputCommandInteraction, Component, ComponentType, ContextMenuCommandInteraction, Events, MessageFlags, PermissionFlagsBits, SeparatorSpacingSize, userMention } from "discord.js";
-import { Command } from "../classes/Command";
+import { Command, CommandCategory } from "../classes/Command";
 import { TMComponentBuilder } from "../classes/ComponentBuilder";
 import { version } from "../../package.json";
 import { avg, dev_mode, reply, toHHMMSS } from "..";
@@ -11,6 +11,7 @@ import { appEmoji } from "../utils/emojiUtils";
 
 const XPCommand: Command = {
     enabled: true,
+    category: CommandCategory.LEVELING,
     name: "xp",
     description: "XP Information",
     options: [

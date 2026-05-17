@@ -1,5 +1,5 @@
 import { ApplicationCommandChoicesData, ApplicationCommandChoicesOption, ApplicationCommandOptionChoiceData, ApplicationCommandOptionType, AutocompleteInteraction, blockQuote, ButtonInteraction, ButtonStyle, channelMention, ChannelType, ChatInputCommandInteraction, codeBlock, Colors, ComponentType, ContainerBuilder, Events, GuildScheduledEvent, GuildScheduledEventCreateOptions, GuildScheduledEventEntityType, GuildScheduledEventPrivacyLevel, GuildScheduledEventRecurrenceRuleFrequency, LabelBuilder, MessageFlags, ModalBuilder, ModalSubmitInteraction, PermissionFlagsBits, Poll, PollData, PollLayoutType, roleMention, SeparatorSpacingSize, StageChannel, TextChannel, TextInputBuilder, TextInputStyle, User, userMention } from "discord.js";
-import { Command } from "../classes/Command";
+import { Command, CommandCategory } from "../classes/Command";
 import axios, { AxiosResponse } from "axios";
 import { TMComponentBuilder } from "../classes/ComponentBuilder";
 import { writeJSON, writeJSONSync } from "fs-extra";
@@ -502,6 +502,7 @@ export async function getFlashingLightWarning(movie: Partial<TMDBMovieFull>): Pr
 
 const MovieCommand: Command = {
     enabled: true,
+    category: CommandCategory.EVENTS,
     name: "movie",
     description: "Manage all movie-related things",
     defaultMemberPermissions: [PermissionFlagsBits.CreateEvents],

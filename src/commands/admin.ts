@@ -1,11 +1,12 @@
 import { ApplicationCommandOptionType, blockQuote, MessageFlags, PermissionFlagsBits, userMention } from "discord.js";
-import { Command } from "../classes/Command";
+import { Command, CommandCategory, UserLevel } from "../classes/Command";
 import { DBUser, userModel } from "../models/user";
 import { addXP, calculateRequiredXP, canLevelDown, canLevelUp, levelDown, levelUp } from "../utils/xpUtils";
 import { Document } from "mongoose";
 
 export const AdminCommand: Command = {
     enabled: true,
+    category: CommandCategory.ADMIN,
     name: "admin",
     description: "Various administrative commands",
     defaultMemberPermissions: [PermissionFlagsBits.Administrator],
@@ -14,6 +15,7 @@ export const AdminCommand: Command = {
             name: "xp",
             description: "XP Admin Tasks",
             type: ApplicationCommandOptionType.SubcommandGroup,
+            requiredRole: UserLevel.ADMIN,
             options: [
                 {
                     name: "add",
@@ -80,6 +82,7 @@ export const AdminCommand: Command = {
         {
             name: "points",
             description: "Points Admin Tasks",
+            requiredRole: UserLevel.ADMIN,
             type: ApplicationCommandOptionType.SubcommandGroup,
             options: [
                 {

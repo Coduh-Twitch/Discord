@@ -1,17 +1,19 @@
 import { ApplicationCommandOptionType, channelMention, ChannelType, ChatInputCommandInteraction, CheckboxBuilder, CheckboxGroupBuilder, CheckboxGroupOptionBuilder, ComponentType, GuildChannel, LabelBuilder, MessageFlags, ModalAssertions, ModalBuilder, ModalSubmitInteraction, PermissionFlagsBits, PollData, PollLayoutType, RadioGroupBuilder, RadioGroupOptionBuilder, TextChannel, TextInputBuilder, TextInputModalData, TextInputStyle, ThreadAutoArchiveDuration, userMention } from "discord.js";
-import { Command } from "../classes/Command";
+import { Command, CommandCategory, UserLevel } from "../classes/Command";
 import { TMComponentBuilder } from "../classes/ComponentBuilder";
 
 const PollCommand: Command = {
     enabled: true,
+    category: CommandCategory.MOD,
     name: "poll",
     description: "Manage Discord polls",
-    defaultMemberPermissions: [PermissionFlagsBits.SendPolls],
+    defaultMemberPermissions: [PermissionFlagsBits.ModerateMembers],
     options: [
         {
             name: "create",
             description: "Create a poll",
             type: ApplicationCommandOptionType.Subcommand,
+            requiredRole: UserLevel.MOD,
             options: [
                 {
                     name: "channel",

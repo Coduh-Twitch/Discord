@@ -1,11 +1,12 @@
 import { ActionRowBuilder, ApplicationCommandOptionType, ButtonBuilder, ButtonInteraction, ButtonStyle, channelMention, ChannelType, ComponentType, formatEmoji, MessageFlags, parseEmoji, PermissionFlagsBits, roleMention, SeparatorSpacingSize, TextChannel, userMention } from "discord.js";
-import { Command } from "../classes/Command";
+import { Command, CommandCategory, UserLevel } from "../classes/Command";
 import { TMComponentBuilder } from "../classes/ComponentBuilder";
 import config from "../config";
 import { dev_mode } from "..";
 
 const DevCommand: Command = {
     enabled: true,
+    category: CommandCategory.DEV,
     defaultMemberPermissions: [PermissionFlagsBits.Administrator],
     name: "dev",
     description: "Developer-Only commands",
@@ -13,12 +14,14 @@ const DevCommand: Command = {
         {
             name: "read-config",
             description: "Display config values for verification",
-            type: ApplicationCommandOptionType.Subcommand
+            type: ApplicationCommandOptionType.Subcommand,
+            requiredRole: UserLevel.DEV,
         },
         {
             name: "role-react",
             description: "Send a reaction role message to the specified channel",
             type: ApplicationCommandOptionType.Subcommand,
+            requiredRole: UserLevel.DEV,
             options: [
                 {
                     name: "role",

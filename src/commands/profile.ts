@@ -1,5 +1,5 @@
 import { ApplicationCommandOptionChoiceData, ApplicationCommandOptionType, AutocompleteInteraction, ButtonInteraction, ButtonStyle, ChatInputCommandInteraction, Colors, Component, ComponentType, Locale, MessageFlags, resolveColor, SelectMenuComponent, SeparatorSpacingSize } from "discord.js";
-import { Command } from "../classes/Command";
+import { Command, CommandCategory } from "../classes/Command";
 import { TMComponentBuilder } from "../classes/ComponentBuilder";
 import { getAverageColor } from "fast-average-color-node";
 import { DBUser, userModel } from "../models/user";
@@ -31,6 +31,7 @@ function array_move(arr, old_index, new_index) {
 
 const ProfileCommand: Command = {
     enabled: true,
+    category: CommandCategory.MISC,
     name: "profile",
     description: "Profile-related commands",
     options: [

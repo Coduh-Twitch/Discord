@@ -34,6 +34,7 @@ export const player = createAudioPlayer({
 });
 
 export let incompatibleInvites: Map<string, Invite> = new Map();
+export const globalCommandMap: Map<string, Command> = new Map();
 
 export const dev_mode = process.argv.includes("-dev");
 console.log("IS DEV MODE")
@@ -168,16 +169,16 @@ async function loadCommands(c: Client) {
         if (!cmd.enabled) return console.log(`Didn't load command file ${file} because it's disabled`)
         if (!cmd.run) return console.log(`Didn't load command file ${file} because it has no run method`)
 
-        const cmdData = (({ enabled, run, ...o }) => o)(cmd);
+        const cmdData = (({ enabled, run, helpDescription, category, ...o }) => o)(cmd);
         cmds.push(cmdData);
+        globalCommandMap.set(cmd.name, cmd);
         console.log(`Loading command ${cmd.name}`)
     })
 
     let twitchCommands = await twitchCustomCommandModel.find();
-    twitchCommands = twitchCommands.filter(tc => !cmds.map((o) => o.name).includes(tc.trigger.replace("!", "").toLowerCase()));
+    // twitchCommands = twitchCommands.filter(tc => !cmds.map((o) => o.name).includes(tc.trigger.replace("!", "").toLowerCase()));
     // let filteredCmds: ApplicationCommandData[] = []
-
-
+    twitchCommands = [];
 
     if (!twitchCommands || twitchCommands.length <= 0) {
         c.application.commands.set(cmds).then(() => {
@@ -213,30 +214,30 @@ async function initBot(c: Client) {
     await loadEvents(c);
     await loadCommands(c);
     // if (filteredCmds.length > 0) {
-    console.log(`Starting Twitch cmd check interval`)
-    await setInterval(async () => {
-        const cmds = (await c.application.commands.fetch()).map(o => (o));
-        const customCmds = (await twitchCustomCommandModel.find()).filter(tc => !cmds.filter((o) => !o.description.startsWith("Custom")).map((o) => o.name).includes(tc.trigger.replace("!", "").toLowerCase()));
-        console.log("CUSTOM", customCmds)
+    // console.log(`Starting Twitch cmd check interval`)
+    // await setInterval(async () => {
+    //     const cmds = (await c.application.commands.fetch()).map(o => (o));
+    //     const customCmds = (await twitchCustomCommandModel.find()).filter(tc => !cmds.filter((o) => !o.description.startsWith("Custom")).map((o) => o.name).includes(tc.trigger.replace("!", "").toLowerCase()));
+    //     console.log("CUSTOM", customCmds)
 
-        let fc = customCmds.map(tc => ({ name: tc.trigger.replace("!", "").toLowerCase(), description: `Custom Command from Twitch [${tc.trigger}]`, })) as ApplicationCommandData[];
-        console.log("FC", fc)
+    //     let fc = customCmds.map(tc => ({ name: tc.trigger.replace("!", "").toLowerCase(), description: `Custom Command from Twitch [${tc.trigger}]`, })) as ApplicationCommandData[];
+    //     console.log("FC", fc)
 
 
-        let newHash = makeHash(fc);
-        if (fc.length <= 0) { newHash = "0"; setHash("0"); }
-        console.log("NEW", newHash)
-        let currentHash = readHash();
-        console.log("new/old")
-        console.log(`${newHash}/${currentHash}`)
-        if (newHash === currentHash) return console.log(`Not reloading commands`);
+    //     let newHash = makeHash(fc);
+    //     if (fc.length <= 0) { newHash = "0"; setHash("0"); }
+    //     console.log("NEW", newHash)
+    //     let currentHash = readHash();
+    //     console.log("new/old")
+    //     console.log(`${newHash}/${currentHash}`)
+    //     if (newHash === currentHash) return console.log(`Not reloading commands`);
 
-        await loadCommands(c);
-        console.log(`Twitch hash differs, sending new commands`)
-        const labs = c.guilds.cache.get(config.guild).channels.cache.get(config.channels.labs) as TextChannel;
-        labs.send("## Resyncing Twitch Commands\nCommands may take a moment to reload. Refresh your client if you experience issues.")
+    //     await loadCommands(c);
+    //     console.log(`Twitch hash differs, sending new commands`)
+    //     const labs = c.guilds.cache.get(config.guild).channels.cache.get(config.channels.labs) as TextChannel;
+    //     labs.send("## Resyncing Twitch Commands\nCommands may take a moment to reload. Refresh your client if you experience issues.")
 
-    }, 300e3)
+    // }, 300e3)
 
     let activities: ActivitiesOptions[] = [{ name: "Watching coduh's stream", type: ActivityType.Custom }, { name: "calculating coduh's stream time", type: ActivityType.Custom }, { name: "bringing my own botox", type: ActivityType.Custom }];
 
