@@ -8,13 +8,16 @@ const config = {
     guild: dev_mode ? process.env.DEV_GUILD_ID : process.env.GUILD_ID,
     valid_guilds: ["1032419712950349895", "834901822317002773"], // dev - coduh
     brand_color: 0x256F81,
+    legacy_point_name: "doubloon".toLowerCase().replaceAll(" ", "_"),
+    point_name: (lower: boolean = false, spaces: boolean = true) => {
+        let n = "Point"
+        let s = lower ? n.toLowerCase() : n;
+        return spaces ? s.replaceAll("_", " ") : s.replaceAll(" ", "_");
+    },
     channels: {
         hangout: dev_mode ? labsChannelId : "834901822988615732",
-        new_videos: dev_mode ? labsChannelId : "981083290314371103",
         rules: dev_mode ? labsChannelId : "834901822757666822",
-        about: dev_mode ? labsChannelId : "834901822757666824",
         streams: dev_mode ? labsChannelId : "981083290314371103",
-        pets: dev_mode ? labsChannelId : "1168435948841861140",
         logs: dev_mode ? labsChannelId : "1504011572459343903",
         labs: labsChannelId,
         announcements: "834901822757666824",
@@ -36,7 +39,8 @@ const config = {
     },
     emojis: {
         upvote: "⬆️",
-        downvote: "⬇️"
+        downvote: "⬇️",
+        points: "🪙"
     },
     roles: {
         members: dev_mode ? "1489808915129696256" : "1485414294978953326",
@@ -64,6 +68,10 @@ const config = {
         "50": "Coduh eats ass live on stream NO ONLYFANS!"
     },
     xp_multipliers: {
+        base: 1,
+        sub: 1.1,
+    },
+    point_multipliers: {
         base: 1,
         sub: 1.1,
     }
