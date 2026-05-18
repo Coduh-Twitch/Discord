@@ -8,6 +8,12 @@ const config = {
     guild: dev_mode ? process.env.DEV_GUILD_ID : process.env.GUILD_ID,
     valid_guilds: ["1032419712950349895", "834901822317002773"], // dev - coduh
     brand_color: 0x256F81,
+    legacy_point_name: "doubloon".toLowerCase().replaceAll(" ", "_"),
+    point_name: (lower: boolean = false, spaces: boolean = true) => {
+        let n = "Point"
+        let s = lower ? n.toLowerCase() : n;
+        return spaces ? s.replaceAll("_", " ") : s.replaceAll(" ", "_");
+    },
     channels: {
         hangout: "1485227800796332162",
         rules: "1504618087717142628",
@@ -37,7 +43,8 @@ const config = {
     },
     emojis: {
         upvote: "⬆️",
-        downvote: "⬇️"
+        downvote: "⬇️",
+        points: "🪙"
     },
     roles: {
         members: dev_mode ? "1489808915129696256" : "1489808915129696256",

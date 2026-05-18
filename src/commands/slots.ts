@@ -15,7 +15,7 @@ const SlotsCommand: Command = {
     options: [
         {
             name: "amount",
-            description: "How many points to roll. \"all\" to go all in!",
+            description: `How many ${config.point_name(true)}s to roll. \"all\" to go all in!`,
             type: ApplicationCommandOptionType.String,
             min_length: 1,
             required: true
@@ -32,7 +32,7 @@ const SlotsCommand: Command = {
         let dbUser = await userModel.findOne({id: interaction.user.id});
         if(Number.isNaN(Number(amount)) && amount === "all") amount = dbUser.points;
         if(Number.isNaN(Number(amount))) return interaction.editReply({flags: [MessageFlags.IsComponentsV2], components: [new TMComponentBuilder().setAccentColor(Colors.Red).addTextDisplay(`## ${await appEmoji(interaction.client, "riotj")} What are You Doing?\n${await appEmoji(interaction.client, "what")} You're trying to give me fake money, DO NOT REDEEM IT, DO NOT REDEEM IT!`).buildContainer()]});
-        if(Number(amount) < 50 || dbUser.points < 50 || dbUser.points < Number(amount)) return interaction.editReply({flags: [MessageFlags.IsComponentsV2], components: [new TMComponentBuilder().setAccentColor(Colors.Red).addTextDisplay(`## ${await appEmoji(interaction.client, "nono")} Not Enough Points\nYou need at least 50 points to gamble, soldier!`).buildContainer()]});
+        if(Number(amount) < 50 || dbUser.points < 50 || dbUser.points < Number(amount)) return interaction.editReply({flags: [MessageFlags.IsComponentsV2], components: [new TMComponentBuilder().setAccentColor(Colors.Red).addTextDisplay(`## ${await appEmoji(interaction.client, "nono")} Not Enough ${config.point_name()}s\nYou need at least 50 ${config.point_name(true)}s to gamble, soldier!`).buildContainer()]});
 
         let rollAmount: number = Math.floor(Number(amount));
 
@@ -58,28 +58,31 @@ const SlotsCommand: Command = {
                 let win = false;
                 let jackpot = false;
 
+                let rt = 'Rolling...'
+                if(savedR1 && savedR3) rt = `${rt} ${await appEmoji(interaction.client, "gigachad")}`
+
                 if(((e1 === e2) || (e2 === e3) || (e1 === e3))) win = true;
                 if((e1 === e2) && (e2 === e3) && (e1 === e3)) jackpot = true;
 
-                if(rolling) container.addTextDisplay(`## ${await appEmoji(interaction.client, "pausej")} Rolling...`)
+                if(rolling) container.addTextDisplay(`## ${await appEmoji(interaction.client, "pausej")} ${rt}`);
                     if(!rolling) {
                         if(!win && !jackpot) {
-                            console.log("LOSER")
-                            container.addTextDisplay(`## ${userMention(interaction.user.id)} lost ${amount.toLocaleString()} points ${await appEmoji(interaction.client, "sadgge")}`)
+                            console.log("LOSER");
+                            container.addTextDisplay(`## ${userMention(interaction.user.id)} lost ${amount.toLocaleString()} ${config.point_name(true)}s ${await appEmoji(interaction.client, "sadgge")}`);
                             dbUser.set("points", dbUser.points - rollAmount);
                             await dbUser.save();
                         }
                         if(win && !jackpot) {
-                            console.log("WIN")
+                            console.log("WIN");
                             // winAmount = Math.floor(rollAmount * 0.5);
-                            container.addTextDisplay(`## ${await appEmoji(interaction.client, "smokee")} So Close!\nThe house felt bad, so ${userMention(interaction.user.id)} got to keep their ${rollAmount.toLocaleString()} point bet ${await appEmoji(interaction.client, "jiggy")}`)
+                            container.addTextDisplay(`## ${await appEmoji(interaction.client, "smokee")} So Close!\nThe house felt bad, so ${userMention(interaction.user.id)} got to keep their ${rollAmount.toLocaleString()} ${config.point_name(true)} bet ${await appEmoji(interaction.client, "jiggy")}`);
                             // dbUser.set("points", dbUser.points + winAmount);
                             await dbUser.save();
                         }
                         if(jackpot) {
-                            console.log("JACKPOT")
+                            console.log("JACKPOT");
                             winAmount = Math.floor(rollAmount * 1.33);
-                            container.addTextDisplay(`## ${await appEmoji(interaction.client, "yay")} You Won!\n${userMention(interaction.user.id)} won the jackpot and got **${winAmount.toLocaleString()}** points! (+${winAmount - rollAmount}) ${await appEmoji(interaction.client, "twerk")}`)
+                            container.addTextDisplay(`## ${await appEmoji(interaction.client, "yay")} You Won!\n${userMention(interaction.user.id)} won the jackpot and got **${winAmount.toLocaleString()}** ${config.point_name(true)}s! (+${(winAmount - rollAmount).toLocaleString()}) ${await appEmoji(interaction.client, "twerk")}`);
                             dbUser.set("points", dbUser.points + winAmount);
                             await dbUser.save();
                         }
@@ -95,11 +98,19 @@ const SlotsCommand: Command = {
             return container;
         }
 
-        let appEmojis = await interaction.client.application.emojis.fetch();
+        await interaction.client.application.emojis.fetch();
 
-        // let emotes = appEmojis.filter(e => !(/[0-9]|color\_/.test(e.name))).map(e => e.name);
-        let emotes = ["coduhDummy", "coduhLove", "coduhMad", "coduhNotSmart", "coduhPeekaboo", "coduhPenguin", "coduhPissed", "coduhRaid", "coduhShooter", "coduhTaco", "coduhAyo", "coduhBeg"];
-        // emotes = await Promise.all(emotes.map(async e => `${await appEmoji(interaction.client, e)}`));
+        let emotes = [
+            "coduhDummy",
+            "coduhLove",
+            // "coduhMad",
+            "coduhPeekaboo",
+            "coduhPissed",
+            "coduhRaid",
+            "coduhShooter",
+            "coduhTaco",
+            // "coduhAyo"
+        ];
 
         await interaction.editReply({flags: [MessageFlags.IsComponentsV2], components: [(await rollContainer(true, [])).buildContainer()]})
 

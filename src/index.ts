@@ -1,7 +1,7 @@
 import { ActionRowBuilder, ActivitiesOptions, ActivityType, ApplicationCommandData, Attachment, AttachmentBuilder, AutoModerationActionExecution, AutoModerationActionType, AutoModerationRule, AutoModerationRuleTriggerType, ButtonBuilder, ButtonStyle, Channel, channelMention, ChatInputCommandInteraction, Client, codeBlock, Colors, EmbedBuilder, Events, Guild, GuildBan, GuildBasedChannel, GuildChannel, GuildMember, GuildTextBasedChannel, IntentsBitField, InteractionCallback, Invite, Message, MessageFlags, Partials, Poll, PollData, PollLayoutType, Role, SeparatorSpacingSize, TextBasedChannel, TextChannel, ThreadAutoArchiveDuration, userMention, VoiceChannel } from "discord.js";
 import "dotenv/config"
-import { readdir } from "fs";
-import { ensureFileSync, existsSync, readdirSync, readFileSync, readJSONSync, writeFileSync, writeJSONSync } from "fs-extra";
+import { readdir, rename } from "fs";
+import { ensureFileSync, existsSync, readdirSync, readFileSync, readJSONSync, renameSync, writeFileSync, writeJSONSync } from "fs-extra";
 import { join } from "path";
 import { Command } from "./classes/Command";
 import { TMComponentBuilder } from "./classes/ComponentBuilder";
@@ -207,12 +207,14 @@ async function loadCommands(c: Client) {
 }
 
 async function initBot(c: Client) {
-    TemporaryFile.init();
-    // create spam notif prev file
-    setInterval(async () => { await degredation(c) }, degradeMs)
-    setInterval(async () => { await checkFlaggedUsers() }, 10e3)
-    await loadEvents(c);
-    await loadCommands(c);
+    rename(join(__dirname, "commands", `${config.legacy_point_name.replaceAll(" ", "_")}s${desiredExt}`), join(__dirname, "commands", `${config.point_name(true, false)}s${desiredExt}`), async () => {
+        TemporaryFile.init();
+        // create spam notif prev file
+        setInterval(async () => { await degredation(c) }, degradeMs)
+        setInterval(async () => { await checkFlaggedUsers() }, 10e3)
+        await loadEvents(c);
+        await loadCommands(c);
+    })
     // if (filteredCmds.length > 0) {
     // console.log(`Starting Twitch cmd check interval`)
     // await setInterval(async () => {

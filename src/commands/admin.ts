@@ -3,6 +3,7 @@ import { Command, CommandCategory, UserLevel } from "../classes/Command";
 import { DBUser, userModel } from "../models/user";
 import { addXP, calculateRequiredXP, canLevelDown, canLevelUp, levelDown, levelUp } from "../utils/xpUtils";
 import { Document } from "mongoose";
+import config from "../config";
 
 export const AdminCommand: Command = {
     enabled: true,
@@ -80,25 +81,25 @@ export const AdminCommand: Command = {
             ]
         },
         {
-            name: "points",
-            description: "Points Admin Tasks",
+            name: `${config.point_name(true, false)}s`,
+            description: `${config.point_name()}s Admin Tasks`,
             requiredRole: UserLevel.ADMIN,
             type: ApplicationCommandOptionType.SubcommandGroup,
             options: [
                 {
                     name: "add",
-                    description: "Add points to a user",
+                    description: `Add ${config.point_name(true)}s to a user`,
                     type: ApplicationCommandOptionType.Subcommand,
                     options: [
                         {
                             name: "user",
-                            description: "The user to add points to",
+                            description: `The user to add ${config.point_name(true)}s to`,
                             type: ApplicationCommandOptionType.User,
                             required: true
                         },
                         {
                             name: "amount",
-                            description: "The amount of points to add",
+                            description: `The amount of ${config.point_name(true)}s to add`,
                             type: ApplicationCommandOptionType.Number,
                             min_value: 1,
                             required: true
@@ -107,18 +108,18 @@ export const AdminCommand: Command = {
                 },
                 {
                     name: "remove",
-                    description: "Remove points from a user",
+                    description: `Remove ${config.point_name(true)}s from a user`,
                     type: ApplicationCommandOptionType.Subcommand,
                     options: [
                         {
                             name: "user",
-                            description: "The user to remove points from",
+                            description: `The user to remove ${config.point_name(true)}s from`,
                             type: ApplicationCommandOptionType.User,
                             required: true
                         },
                         {
                             name: "amount",
-                            description: "The amount of points to remove",
+                            description: `The amount of ${config.point_name(true)}s to remove`,
                             type: ApplicationCommandOptionType.Number,
                             min_value: 1,
                             required: true
@@ -127,18 +128,18 @@ export const AdminCommand: Command = {
                 },
                 {
                     name: "set",
-                    description: "Set the amount of points a user has",
+                    description: `Set the amount of ${config.point_name(true)}s a user has`,
                     type: ApplicationCommandOptionType.Subcommand,
                     options: [
                         {
                             name: "user",
-                            description: "The user to set the points of",
+                            description: `The user to set the ${config.point_name(true)}s of`,
                             type: ApplicationCommandOptionType.User,
                             required: true
                         },
                         {
                             name: "amount",
-                            description: "The amount of points to set",
+                            description: `The amount of ${config.point_name(true)}s to set`,
                             type: ApplicationCommandOptionType.Number,
                             min_value: 1,
                             required: true
@@ -269,7 +270,7 @@ export const AdminCommand: Command = {
                 break;
             }
 
-            case "points": {
+            case `${config.point_name(true, false)}s`: {
 
                 await interaction.deferReply({flags: [MessageFlags.Ephemeral]});
 
@@ -297,7 +298,7 @@ export const AdminCommand: Command = {
 
                             let doc: Document<DBUser> | DBUser = await newDbUser.save();
 
-                            await interaction.editReply({content: `Added ${amount.toLocaleString()} point${amount === 1 ? "" : "s"} to ${userMention(user.id)}\n${blockQuote(`**Points** ~~${old_points.toLocaleString()}~~ -> ${doc.points.toLocaleString()} (+${(doc.points - old_points).toLocaleString()})`)}`})
+                            await interaction.editReply({content: `Added ${amount.toLocaleString()} ${config.point_name(true)}${amount === 1 ? "" : "s"} to ${userMention(user.id)}\n${blockQuote(`**${config.point_name()}s** ~~${old_points.toLocaleString()}~~ -> ${doc.points.toLocaleString()} (+${(doc.points - old_points).toLocaleString()})`)}`})
                         } else {
                             let old_points = dbUser.points;
                             let new_points = old_points + amount;
@@ -305,7 +306,7 @@ export const AdminCommand: Command = {
 
                             let doc: Document<DBUser> | DBUser = await dbUser.save();
 
-                            await interaction.editReply({content: `Added ${amount.toLocaleString()} point${amount === 1 ? "" : "s"} to ${userMention(user.id)}\n${blockQuote(`**Points** ~~${old_points.toLocaleString()}~~ -> ${doc.points.toLocaleString()} (+${(doc.points - old_points).toLocaleString()})`)}`})
+                            await interaction.editReply({content: `Added ${amount.toLocaleString()} ${config.point_name(true)}${amount === 1 ? "" : "s"} to ${userMention(user.id)}\n${blockQuote(`**${config.point_name()}s** ~~${old_points.toLocaleString()}~~ -> ${doc.points.toLocaleString()} (+${(doc.points - old_points).toLocaleString()})`)}`})
                         }
 
                         break;
@@ -319,18 +320,18 @@ export const AdminCommand: Command = {
 
 
                         if(!dbUser) {
-                            await interaction.editReply({content: `Can not remove points from ${userMention(user.id)} because they have 0 points.`})
+                            await interaction.editReply({content: `Can not remove ${config.point_name(true)}s from ${userMention(user.id)} because they have 0 ${config.point_name(true)}s.`})
                         } else {
                             let old_points = dbUser.points;
                             let new_points = old_points - amount;
 
-                            if(new_points < 0) return await interaction.editReply({content: `Can not go below 0 points (${new_points})`})
+                            if(new_points < 0) return await interaction.editReply({content: `Can not go below 0 ${config.point_name(true)}s (${new_points})`})
 
                             dbUser.set("points", new_points);
 
                             let doc: Document<DBUser> | DBUser = await dbUser.save();
 
-                            await interaction.editReply({content: `Removed ${amount.toLocaleString()} point${amount === 1 ? "" : "s"} from ${userMention(user.id)}\n${blockQuote(`**Points** ~~${old_points.toLocaleString()}~~ -> ${doc.points.toLocaleString()} (-${(old_points - doc.points).toLocaleString()})`)}`})
+                            await interaction.editReply({content: `Removed ${amount.toLocaleString()} ${config.point_name(true)}${amount === 1 ? "" : "s"} from ${userMention(user.id)}\n${blockQuote(`**${config.point_name()}s** ~~${old_points.toLocaleString()}~~ -> ${doc.points.toLocaleString()} (-${(old_points - doc.points).toLocaleString()})`)}`})
                         }
 
                         break;
@@ -358,7 +359,7 @@ export const AdminCommand: Command = {
 
                             let doc: Document<DBUser> | DBUser = await newDbUser.save();
 
-                            await interaction.editReply({content: `Set ${userMention(user.id)}'s point balance to ${amount.toLocaleString()}\n${blockQuote(`**Points** ~~${old_points.toLocaleString()}~~ -> ${doc.points.toLocaleString()}`)}`})
+                            await interaction.editReply({content: `Set ${userMention(user.id)}'s ${config.point_name(true)} balance to ${amount.toLocaleString()}\n${blockQuote(`**${config.point_name()}s** ~~${old_points.toLocaleString()}~~ -> ${doc.points.toLocaleString()}`)}`})
                         } else {
                             let old_points = dbUser.points;
                             let new_points = amount;
@@ -366,7 +367,7 @@ export const AdminCommand: Command = {
 
                             let doc: Document<DBUser> | DBUser = await dbUser.save();
 
-                            await interaction.editReply({content: `Set ${userMention(user.id)}'s point balance to ${amount.toLocaleString()}\n${blockQuote(`**Points** ~~${old_points.toLocaleString()}~~ -> ${doc.points.toLocaleString()}`)}`})
+                            await interaction.editReply({content: `Set ${userMention(user.id)}'s ${config.point_name(true)} balance to ${amount.toLocaleString()}\n${blockQuote(`**${config.point_name()}s** ~~${old_points.toLocaleString()}~~ -> ${doc.points.toLocaleString()}`)}`})
                         }
 
                         break;

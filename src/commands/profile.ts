@@ -422,7 +422,7 @@ const ProfileCommand: Command = {
 
             let member = interaction.guild?.members.cache.get(user.id);
 
-            container.addThumbnailAccessorySection(`## @${user.displayName}\n-# ${interaction.guild.ownerId === user.id ? `${await appEmoji(interaction.client, "coduhlove")} ` : ""}${user.bot ? "**BOT**" : user.username} ∙ ${user.id}\n\n${dbUser ? `🪙 **${dbUser.points.toLocaleString()}** Point${dbUser.points === 1 ? "" : "s"} - ✨ Level **${dbUser.level}** _(**${numberFormatter.format(dbUser.xp)}** XP)_` : ""}`, avatar)
+            container.addThumbnailAccessorySection(`## @${user.displayName}\n-# ${interaction.guild.ownerId === user.id ? `${await appEmoji(interaction.client, "coduhlove")} ` : ""}${user.bot ? "**BOT**" : user.username} ∙ ${user.id}\n\n${dbUser ? `${config.emojis.points} **${numberFormatter.format(dbUser.points)}** ${config.point_name(false, true)}${dbUser.points === 1 ? "" : "s"} - ✨ Level **${dbUser.level}** _(**${numberFormatter.format(dbUser.xp)}** XP)_` : ""}`, avatar)
 
             if (!user.bot) {
 
