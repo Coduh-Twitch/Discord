@@ -1,4 +1,4 @@
-import { ApplicationCommandOptionType, ButtonInteraction, ButtonStyle, ChatInputCommandInteraction, Component, ComponentType, ContextMenuCommandInteraction, Events, MessageFlags, PermissionFlagsBits, SeparatorSpacingSize, userMention } from "discord.js";
+import { ApplicationCommandOptionType, blockQuote, ButtonInteraction, ButtonStyle, ChatInputCommandInteraction, Component, ComponentType, ContextMenuCommandInteraction, Events, MessageFlags, PermissionFlagsBits, SeparatorSpacingSize, userMention } from "discord.js";
 import { Command, CommandCategory } from "../classes/Command";
 import { TMComponentBuilder } from "../classes/ComponentBuilder";
 import { version } from "../../package.json";
@@ -78,10 +78,12 @@ const PointsCommand: Command = {
                 let dbUser = await userModel.findOne({ id: interaction.user.id });
                 let dbTarget = await userModel.findOne({ id: target.id });
 
-                if (!dbUser || (dbUser && dbUser.points < amount)) return interaction.editReply({ content: `${await appEmoji(interaction.client, "nono")} You don't have enough ${config.point_name(true)}s (you have ${dbUser?.points || 0})` });
+                if (!dbUser || (dbUser && dbUser.points < amount) || (dbUser.points - amount) < 0) return interaction.editReply({ content: `${await appEmoji(interaction.client, "nono")} You don't have enough ${config.point_name(true)}s (you have ${dbUser?.points || 0})` });
                 if (amount <= 0) return interaction.editReply({ content: `${await appEmoji(interaction.client, "nono")} You must pay at least 1 ${config.point_name(true)}` });
 
                 let updatedTarget: DBUser;
+                let oldTargetBalance = 0;
+                let oldSenderBalance = 0;
 
                 try {
                     if (!dbTarget) {
@@ -92,15 +94,27 @@ const PointsCommand: Command = {
                             level: 0
                         })
 
+                        oldSenderBalance = dbUser.points;
+
                         updatedTarget = await newDbUser.save();
+                        dbUser.set("points", dbUser.points - amount);
+                        dbUser = await dbUser.save();
                     } else {
+                        oldTargetBalance = dbTarget.points;
+                        oldSenderBalance = dbUser.points;
+
                         dbTarget.set("points", dbTarget.points + amount);
                         updatedTarget = await dbTarget.save();
+                        dbUser.set("points", dbUser.points - amount);
+                        dbUser = await dbUser.save();
                     }
+                    
 
                     let paidContainer = new TMComponentBuilder();
                     paidContainer.setAccentColor(config.brand_color);
                     paidContainer.addTextDisplay(`### ${userMention(interaction.user.id)} paid ${amount.toLocaleString()} ${config.point_name(true)}${amount === 1 ? "" : "s"} to **${amount > 100 ? userMention(target.id) : targetMember.displayName || targetMember.user.username}**!`)
+                    paidContainer.addSeparator();
+                    paidContainer.addTextDisplay(`**New Balances**\n${blockQuote(`**${userMention(interaction.user.id)}** | ~~${oldSenderBalance.toLocaleString()}~~ -> ${config.emojis.points} **${dbUser.points.toLocaleString()}** *(-${amount.toLocaleString()})*\n\n**@${targetMember.displayName || target.username}** | ~~${oldTargetBalance.toLocaleString()}~~ -> ${config.emojis.points} **${updatedTarget.points.toLocaleString()}** *(+${amount.toLocaleString()})*`)}`)
                     paidContainer.addSeparator(SeparatorSpacingSize.Small);
                     paidContainer.addTextDisplay(`-# <t:${Math.floor(Date.now() / 1000)}:R>`)
 
@@ -189,7 +203,7 @@ const PointsCommand: Command = {
                     }));
 
                     let container = new TMComponentBuilder();
-                    container.addTextDisplay(`## ${config.point_name()}s Leaderboard`)
+                    container.addTextDisplay(`## ${config.emojis.points} ${config.point_name()}s Leaderboard`)
                     container.addSeparator(SeparatorSpacingSize.Small, false);
                     container.addThumbnailAccessorySection(`${userStr.join("\n")}`, interaction.guild.iconURL())
                     container.setAccentColor(config.brand_color);

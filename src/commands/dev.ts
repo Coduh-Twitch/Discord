@@ -126,7 +126,7 @@ const DevCommand: Command = {
                 container.setAccentColor(config.brand_color);
 
                 if (page === 0) {
-                    container.addTextDisplay(`### Top-Level Values\n- **dev_mode** ${dev_mode}\n- **coduh** ${userMention(config.coduh)}\n- ${stringValue("polls_enabled")}\n- ${stringValue("guild")}\n- ${listValue("valid_guilds")}\n- ${stringValue("brand_color")}`)
+                    container.addTextDisplay(`### Top-Level Values\n- **dev_mode** ${dev_mode}\n- **coduh** ${userMention(config.coduh)}\n- ${stringValue("polls_enabled")}\n- ${stringValue("guild")}\n- ${listValue("valid_guilds")}\n- ${stringValue("brand_color")}\n- ${stringValue("legacy_point_name")}\n- **point_name** ${config.point_name(true, true)} | ${config.point_name(true, false)} | ${config.point_name(false, true)} | ${config.point_name(false, false)}`)
                     container.addSeparator();
                     container.addTextDisplay(`### Channels`)
 

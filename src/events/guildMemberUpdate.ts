@@ -5,6 +5,7 @@ import { TMComponentBuilder } from "../classes/ComponentBuilder";
 import { userModel } from "../models/user";
 import { memberWelcomeImage } from "../utils/canvasUtils";
 import { appEmoji } from "../utils/emojiUtils";
+import { post } from "axios";
 
 
 export default {
@@ -64,6 +65,12 @@ export default {
             dbUser.save()
         } catch(e) {
             console.log(`Failed to save user doc for id ${dbUser.id}`)
+        }
+
+        try {
+            await post(`${process.env.CHATBOT_BASE_URL}/api/discord/new-member`, {username: new_member.user.username, memberCount: new_member.guild.memberCount});
+        } catch(e) {
+            console.log(`Failed to notify Twitch app of new member`)
         }
         }
     }

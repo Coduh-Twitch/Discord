@@ -124,7 +124,7 @@ const XPCommand: Command = {
                     }));
                     
                     let container = new TMComponentBuilder();
-                    container.addTextDisplay(`## XP Leaderboard`)
+                    container.addTextDisplay(`## ✨ XP Leaderboard`)
                     container.addSeparator(SeparatorSpacingSize.Small, false);
                     container.addThumbnailAccessorySection(`${userStr.join("\n")}`, interaction.guild.iconURL())
                     container.setAccentColor(config.brand_color);

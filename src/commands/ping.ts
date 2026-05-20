@@ -1,10 +1,11 @@
-import { ChatInputCommandInteraction, Events, MessageFlags, PermissionFlagsBits } from "discord.js";
+import { ChatInputCommandInteraction, Events, MessageFlags, PermissionFlagsBits, blockQuote } from "discord.js";
 import { Command, CommandCategory, UserLevel } from "../classes/Command";
 import { TMComponentBuilder } from "../classes/ComponentBuilder";
 import { version } from "../../package.json";
 import { dev_mode, reply, toHHMMSS } from "..";
 import config from "../config";
 import { hostname } from "os";
+import GitUtils from "../utils/gitUtils";
 
 const PingCommand: Command = {
     enabled: true,
@@ -20,9 +21,10 @@ const PingCommand: Command = {
         });
         let roundtrip = i.resource.message.createdTimestamp - interaction.createdTimestamp;
         let websocket = interaction.client.ws.ping;
+        let commit = await GitUtils.getCommitHash();
 
         let con = new TMComponentBuilder().setAccentColor(config.brand_color);
-        con.addTextDisplay(`## Service Status (${interaction.client.user.username})\n-# v${version} | ${dev_mode ? "`DEVELOPMENT`" : "`PRODUCTION`"}\n### Hostname | \`${hostname}\`\n### Uptime | \`${toHHMMSS(process.uptime() * 1000)}\`\n### Roundtrip Latency | \`${roundtrip >= 1000 ? "⚠️ " : ""}${roundtrip}ms\`\n### Websocket Latency | \`${websocket >= 1000 ? "⚠️ " : ""}${websocket}ms\``)
+        con.addTextDisplay(`## Service Status (${interaction.client.user.username})\n-# v${version} | Commit \`${commit ? commit : "unknown"}\` | ${dev_mode ? "`DEVELOPMENT`" : "`PRODUCTION`"}\n${blockQuote(`- Hostname | \`${hostname}\`\n- Uptime | \`${toHHMMSS(process.uptime() * 1000)}\`\n- Roundtrip Latency | \`${roundtrip >= 1000 ? "⚠️ " : ""}${roundtrip}ms\`\n- Websocket Latency | \`${websocket >= 1000 ? "⚠️ " : ""}${websocket}ms\``)}`)
 
         interaction.editReply({components: [con.buildContainer()], flags: [MessageFlags.IsComponentsV2]})
     },
