@@ -21,6 +21,8 @@ import diff_match_patch from "diff-match-patch";
 import { createPatch } from "diff";
 import { TemporaryFile } from "./classes/TemporaryFile";
 import { createAudioPlayer, generateDependencyReport, NoSubscriberBehavior } from "@discordjs/voice";
+import { raffleModel } from "./models/raffle";
+import { appEmoji } from "./utils/emojiUtils";
 
 // throw new Error(generateDependencyReport());
 
@@ -35,6 +37,10 @@ export const player = createAudioPlayer({
 
 export let incompatibleInvites: Map<string, Invite> = new Map();
 export const globalCommandMap: Map<string, Command> = new Map();
+
+let thirtyWarnings: Map<string, boolean> = new Map();
+let fifteenWarnings: Map<string, boolean> = new Map();
+let sevenWarnings: Map<string, boolean> = new Map();
 
 export const dev_mode = process.argv.includes("-dev");
 console.log("IS DEV MODE")
@@ -199,7 +205,6 @@ async function loadCommands(c: Client) {
 
         c.application.commands.set(cmds).then(() => {
             console.log(`Successfully loaded ${cmds.length} commands (${filteredCmds.length}/${cmds.length} from Twitch)`)
-
         }).catch(e => {
             console.log(`Failed to load commands`)
         })
@@ -415,6 +420,93 @@ async function initBot(c: Client) {
         }
     })
 
+    setInterval(async () => {
+        // Raffle Interval
+        let raffle = (await raffleModel.find())?.[0] || null;
+        if(raffle) {
+            let channel = client.guilds.cache.get(config.guild).channels.cache.get(raffle.channel_id) as TextChannel;
+
+            let thirtySeconds = Date.now() + (30e3);
+            let fifteenSeconds = Date.now() + (15e3);
+            let sevenSeconds = Date.now() + (7e3);
+
+            let raffleExpiration = raffle.expires_at;
+
+            // console.log("30",`${raffleExpiration}/${thirtySeconds}`, raffleExpiration <= thirtySeconds)
+            // console.log("15",`${raffleExpiration}/${fifteenSeconds}`, raffleExpiration <= fifteenSeconds)
+            // console.log("7",`${raffleExpiration}/${sevenSeconds}`, raffleExpiration <= sevenSeconds)
+
+            if (raffleExpiration <= Date.now()) {
+                thirtyWarnings.set(raffle.id, true);
+                fifteenWarnings.set(raffle.id, true);
+                sevenWarnings.set(raffle.id, true);
+                
+                let participants = raffle.participants;
+                let channel = client.guilds.cache.get(config.guild).channels.cache.get(raffle.channel_id) as TextChannel;
+                if (!raffle.winner_id) {
+                    if (participants && participants.length > 0) {
+                        let randomInd = Math.floor(Math.random() * participants.length);
+                        let winnerId = participants[randomInd].id || participants[0].id;
+                        let winner = await client.users.fetch(winnerId);
+                        if (winner) {
+                            let dbUser = await userModel.findOne({ id: winner.id });
+                            if (!dbUser) {
+                                let newUser = new userModel({
+                                    twitchId: winner.id,
+                                    points: raffle.points,
+                                    xp: 0,
+                                    level: 0,
+                                    shownWelcomeMessage: true
+                                })
+
+                                await newUser.save();
+                            } else {
+                                dbUser.set("points", dbUser.points + raffle.points);
+                                await dbUser.save();
+                            }
+                            await raffleModel.findOneAndDelete({id: raffle.id});
+                            await dbUser.set("points", dbUser.points + raffle.points);
+                            await dbUser.save();
+                            channel.send({content: `## ${await appEmoji(client, "yay")} ${userMention(winner.id)} won the raffle for **${raffle.points.toLocaleString()} ${config.point_name(false)}${raffle.points === 1 ? "" : "s"}**! ${await appEmoji(client, "stripj")}`})
+                            let logChannel = client.guilds.cache.get(config.guild).channels.cache.get(config.channels.logs) as TextChannel;
+
+                            logChannel.send({flags: [MessageFlags.IsComponentsV2], components: [logContainer("Raffle Won", `${userMention(winner.id)} (${winner.id}) won a raffle created by ${userMention(raffle.creator_id)} (${raffle.creator_id}) for ${raffle.points.toLocaleString()} ${config.point_name(true)}${raffle.points === 1 ? "" : "s"}`).buildContainer()]})
+
+                        } else {
+                            channel.send({content: `## ${await appEmoji(client, "noooo")} The raffle winner had a heart attack and fucking died`})
+                            await raffleModel.findOneAndDelete({id: raffle.id});
+                        }
+
+                    } else {
+                        channel.send({content: `## ${await appEmoji(client, "smokee")} Nobody entered the raffle`})
+                        await raffleModel.findOneAndDelete({id: raffle.id});
+                    }
+                } else await raffleModel.findOneAndDelete({id: raffle.id});
+            }
+
+            if ((raffleExpiration <= thirtySeconds) && !thirtyWarnings.has(raffle.id)) {
+                thirtyWarnings.set(raffle.id, true);
+                // await reply(client, null, `The raffle expires in 30 seconds`)
+                channel.send({content: `${await appEmoji(client, "pausej")} The raffle for ${raffle.points.toLocaleString()} ${config.point_name(true)}${raffle.points === 1 ? "" : "s"} expires <t:${Math.floor(raffle.expires_at / 1000)}:R>!`})
+            }
+
+            if ((raffleExpiration <= fifteenSeconds) && !fifteenWarnings.has(raffle.id)) {
+                thirtyWarnings.set(raffle.id, true);
+                fifteenWarnings.set(raffle.id, true);
+                channel.send({content: `${await appEmoji(client, "pausej")} The raffle for ${raffle.points.toLocaleString()} ${config.point_name(true)}${raffle.points === 1 ? "" : "s"} expires <t:${Math.floor(raffle.expires_at / 1000)}:R>!`})
+
+            }
+
+            if ((raffleExpiration <= sevenSeconds) && !sevenWarnings.has(raffle.id)) {
+                thirtyWarnings.set(raffle.id, true);
+                fifteenWarnings.set(raffle.id, true);
+                sevenWarnings.set(raffle.id, true);
+                channel.send({content: `${await appEmoji(client, "pausej")} The raffle for ${raffle.points.toLocaleString()} ${config.point_name(true)}${raffle.points === 1 ? "" : "s"} expires <t:${Math.floor(raffle.expires_at / 1000)}:R>!`})
+            }
+
+            
+        }
+    },1e3);
 }
 
 client.on(Events.ClientReady, async c => {
