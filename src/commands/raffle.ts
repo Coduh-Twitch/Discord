@@ -16,6 +16,7 @@ const RaffleCommand: Command = {
             name: "start",
             description: "Start a raffle",
             type: ApplicationCommandOptionType.Subcommand,
+            requiredRole: UserLevel.MOD,
             options: [
                 {
                     name: "amount",
@@ -29,6 +30,7 @@ const RaffleCommand: Command = {
             name: "cancel",
             description: "Cancel the current raffle",
             type: ApplicationCommandOptionType.Subcommand,
+            requiredRole: UserLevel.MOD,
         }
     ],
     run: async (interaction) => {
