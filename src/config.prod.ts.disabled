@@ -20,13 +20,13 @@ const config = {
         streams: dev_mode ? labsChannelId : "981083290314371103",
         logs: dev_mode ? labsChannelId : "1504011572459343903",
         labs: labsChannelId,
-        announcements: "834901822757666824",
-        movie_night_stage: "1491962302411571240",
         joins: "834901822757666821",
         jackbox: "1490272878107820103",
         wordle: "1490471194049249371",
         movie_suggestions: "1499677576602325092",
         movie_polls: "",
+        announcements: "834901822757666824",
+        movie_night_stage: "1491962302411571240",
         media_channels: [
             {
                 emojis: { // food
@@ -64,8 +64,7 @@ const config = {
         "7": "an Emoji of Your Choice",
         "8": "a Custom Soundboard",
         "9": "a Custom Role",
-        "10": ["a hoisted Custom Role", "VIP on Twitch"],
-        "50": "Coduh eats ass live on stream NO ONLYFANS!"
+        "10": ["a hoisted Custom Role", "VIP on Twitch"]
     },
     xp_multipliers: {
         base: 1,

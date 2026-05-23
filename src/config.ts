@@ -70,7 +70,6 @@ const config = {
         "8": "a Custom Soundboard",
         "9": "a Custom Role",
         "10": ["a hoisted Custom Role", "VIP on Twitch"],
-        "50": "Coduh eats ass live on stream NO ONLYFANS!"
     },
     xp_multipliers: {
         base: 1,

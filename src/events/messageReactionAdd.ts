@@ -30,7 +30,7 @@ export default {
 
             let maxFileSize = 9524608;
 
-            if(upReactors.count === 2) {
+            if(upReactors.count === 10) {
                 let container = new TMComponentBuilder();
                 container.setAccentColor(config.brand_color);
 
