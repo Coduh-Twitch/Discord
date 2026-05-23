@@ -9,16 +9,22 @@ import { join } from "path";
 import { readFileSync } from "fs";
 import { player } from "..";
 
+interface Utterance {
+    id: string;
+    user: string;
+    content: string;
+}
 
 let voiceConnection: VoiceConnection | null = null;
 let joinedChannel: VoiceBasedChannel | null = null;
 let voiceHost: User | null = null;
-let utteranceQueue: {user:string, content: string}[] = [];
+let utteranceQueue: Utterance[] = [];
+let utteranceIds: Map<string, string> = new Map(); // content, id
 let currentQueueItem = 0;
 let run = 0;
 
-function utterPath(id: string, userId: string) {
-    return join(process.cwd(), "temp", `utterance_${id}_${userId}.webm`);
+function utterPath(id: string) {
+    return join(process.cwd(), "temp", `utterance_${id}.webm`);
 }
 
 
@@ -41,6 +47,12 @@ const TTSCommand: Command = {
             type: ApplicationCommandOptionType.Subcommand,
         },
         {
+            name: "stop",
+            description: "Stop the current TTS being played",
+            type: ApplicationCommandOptionType.Subcommand,
+            requiredRole: UserLevel.MOD
+        },
+        {
             name: "say",
             description: "Speak through TTS",
             type: ApplicationCommandOptionType.Subcommand,
@@ -49,6 +61,8 @@ const TTSCommand: Command = {
                     name: "content",
                     description: "content",
                     type: ApplicationCommandOptionType.String,
+                    max_length: 1500,
+                    min_length: 1,
                     required: true
                 },
                 {
@@ -85,6 +99,23 @@ const TTSCommand: Command = {
         //     interaction.reply({flags: [MessageFlags.Ephemeral], content: `${userMention(voiceHost.id)} is currently `})
         //     return;
         // }
+
+        if (subcommand === "stop") {
+            if (!m.permissions.has(PermissionFlagsBits.ModerateMembers, true)) return interaction.editReply({ content: `Only Moderators can do this.` });
+            if (!voiceConnection || !player || player.state.status !== AudioPlayerStatus.Playing) return interaction.editReply({ content: `There is no active TTS session, or TTS is not playing.` });
+            if (!m.voice.channelId) return interaction.editReply({ content: `You must be in a voice channel to do this.` });
+
+            try {
+                player.stop();
+                interaction.editReply({ content: `Skipped TTS` })
+                m.voice.channel.send({ content: `${userMention(interaction.user.id)} skipped the current TTS` })
+            } catch (e) {
+                console.log(e);
+                interaction.editReply({ content: `Failed to skip TTS` })
+            }
+
+
+        }
 
         if (subcommand === "join") {
 
@@ -126,7 +157,7 @@ const TTSCommand: Command = {
         }
 
         if (subcommand === "leave") {
-            if (!voiceHost || (voiceHost.id !== interaction.user.id && m.permissions.has(PermissionFlagsBits.ModerateMembers))) return interaction.editReply({ content: `You can not end the current session.` })
+            if (!voiceHost || ((voiceHost.id !== interaction.user.id) && !(m.permissions.has(PermissionFlagsBits.ModerateMembers, true)))) return interaction.editReply({ content: `You can not end the current session.` })
             if (voiceConnection) {
                 player.stop()
                 voiceConnection.disconnect();
@@ -149,15 +180,18 @@ const TTSCommand: Command = {
             let content = interaction.options.getString('content', true);
             content = cleanContent(content, interaction.channel);
             if (!voiceConnection) return interaction.editReply({ content: `There is no TTS session in your current voice channel. Start one with </tts join:${interaction.commandId}>` })
+            if (content.length > 1500) return interaction.editReply({ content: `TTS is too long (${content.length.toLocaleString()}/1,500)` })
             if (player.state.status === AudioPlayerStatus.Playing || player.state.status === AudioPlayerStatus.Buffering) {
-                let qp = {user: interaction.user.id, content: content};
+                let qp: Utterance = { user: interaction.user.id, content: content, id: crypto.randomUUID() };
                 utteranceQueue.push(qp);
+                utteranceIds.set(content, qp.id);
 
-                return interaction.editReply({content: `TTS added to queue at position ${utteranceQueue.indexOf(qp) + 1}/${utteranceQueue.length}`});
+                return interaction.editReply({ content: `TTS added to queue at position ${utteranceQueue.indexOf(qp) + 1}/${utteranceQueue.length}` });
                 // return interaction.editReply({ content: `A TTS is already playing.\nRun this command again:\n\`\`\`/tts say content:${content}\`\`\`` })
             }
             if (voiceConnection && content) {
-                let utterancePath = utterPath(interaction.id, interaction.user.id);
+                let utteranceId = crypto.randomUUID();
+                let utterancePath = utterPath(utteranceId);
                 tts.ttsPromise(voiceHost && voiceHost.id !== interaction.user.id ? `${interaction.user.username} said: ${content}` : content, utterancePath).then(v => {
                     let res = createAudioResource(utterancePath, { inputType: StreamType.WebmOpus, inlineVolume: true });
                     if (res.volume) res.volume.setVolume(1);
@@ -175,29 +209,36 @@ const TTSCommand: Command = {
 
 
 
-        if (run === 1) player.on("stateChange", (oldState, newState) => {
+        if (run === 1) player.on("stateChange", async (oldState, newState) => {
             console.log("STATE CHANGE", oldState.status, " -> ", newState.status)
             if (oldState.status === AudioPlayerStatus.Playing && newState.status !== AudioPlayerStatus.Playing) {
                 if (utteranceQueue[currentQueueItem]) {
                     let queueItem = utteranceQueue[currentQueueItem]
+                    console.log("utterance found", queueItem.content)
                     let content = queueItem.content;
-                    let utterancePath = utterPath(interaction.id, interaction.user.id);
-                    tts.ttsPromise(voiceHost && voiceHost.id !== interaction.user.id ? `${interaction.user.username} said: ${content}` : content, utterancePath).then(v => {
+                    let utteranceId = utteranceIds.get(content);
+                    let utterancePath = utterPath(utteranceId);
+                    let user = await interaction.client.users.fetch(queueItem.user);
+                    tts.ttsPromise((voiceHost && (voiceHost.id !== queueItem.user)) ? `${user.username} said: ${content}` : content, utterancePath).then(v => {
                         let res = createAudioResource(utterancePath, { inputType: StreamType.WebmOpus, inlineVolume: true });
                         if (res.volume) res.volume.setVolume(1);
                         player.play(res);
                         player.unpause();
-                        interaction.editReply({ content: `Trying to say \`${content}\`` })
+                        // interaction.editReply({ content: `Trying to say \`${content}\`` })
                         interaction.channel.send({ content: `### TTS from ${userMention(queueItem.user)}\n-# <t:${Math.floor(Date.now() / 1000)}:R>\n${blockQuote(content)}` })
                     }).catch(e => {
                         console.log(e);
                         interaction.editReply({ content: `Failed to say \`${content}\`${e?.message ? `. Error: ${e.message}` : ""}` })
                     })
 
-                    currentQueueItem+=1;
-                    utteranceQueue.shift()
-                    if(!utteranceQueue[currentQueueItem]) currentQueueItem = 0;
+                    currentQueueItem += 1;
+                    utteranceQueue.shift();
+                    if (!utteranceQueue[currentQueueItem]) {
+                    console.log("next utterance not found, resetting to 0")
+                        currentQueueItem = 0;
+                    }
                 } else {
+                    console.log("utterance not found")
                     currentQueueItem = 0;
                 }
             }

@@ -21,7 +21,7 @@ import diff_match_patch from "diff-match-patch";
 import { createPatch } from "diff";
 import { TemporaryFile } from "./classes/TemporaryFile";
 import { createAudioPlayer, generateDependencyReport, NoSubscriberBehavior } from "@discordjs/voice";
-import { raffleModel } from "./models/raffle";
+import { DBRaffleParticipant, raffleModel } from "./models/raffle";
 import { appEmoji } from "./utils/emojiUtils";
 
 // throw new Error(generateDependencyReport());
@@ -470,7 +470,7 @@ async function initBot(c: Client) {
                             channel.send({content: `## ${await appEmoji(client, "yay")} ${userMention(winner.id)} won the raffle for **${raffle.points.toLocaleString()} ${config.point_name(false)}${raffle.points === 1 ? "" : "s"}**! ${await appEmoji(client, "stripj")}`})
                             let logChannel = client.guilds.cache.get(config.guild).channels.cache.get(config.channels.logs) as TextChannel;
 
-                            logChannel.send({flags: [MessageFlags.IsComponentsV2], components: [logContainer("Raffle Won", `${userMention(winner.id)} (${winner.id}) won a raffle created by ${userMention(raffle.creator_id)} (${raffle.creator_id}) for ${raffle.points.toLocaleString()} ${config.point_name(true)}${raffle.points === 1 ? "" : "s"}`).buildContainer()]})
+                            logChannel.send({flags: [MessageFlags.IsComponentsV2], components: [logContainer("Raffle Won", `${userMention(winner.id)} (${winner.id}) won a raffle created by ${userMention(raffle.creator_id)} (${raffle.creator_id}) for ${raffle.points.toLocaleString()} ${config.point_name(true)}${raffle.points === 1 ? "" : "s"}\n### Participants (${raffle.participants.length.toLocaleString()})\n${raffle.participants.map((p: DBRaffleParticipant) => `- ${userMention(p.id)}`).join("\n")}`).buildContainer()]})
 
                         } else {
                             channel.send({content: `## ${await appEmoji(client, "noooo")} The raffle winner had a heart attack and fucking died`})

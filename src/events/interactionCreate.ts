@@ -1,4 +1,4 @@
-import { AutocompleteInteraction, BaseInteraction, ButtonInteraction, ChatInputCommandInteraction, codeBlock, Message, MessageFlags } from "discord.js";
+import { ApplicationCommandOptionType, AutocompleteInteraction, BaseInteraction, ButtonInteraction, ChatInputCommandInteraction, codeBlock, Message, MessageFlags, PermissionFlagsBits, roleMention } from "discord.js";
 import { join } from "path";
 import { desiredExt, dev_mode } from "..";
 import { twitchCustomCommandModel } from "../models/twitchCustomCommand";
@@ -8,6 +8,7 @@ import { TemporaryFile } from "../classes/TemporaryFile";
 import { TMComponentBuilder } from "../classes/ComponentBuilder";
 import { parseCustomId } from "../utils/customIdUtils";
 import { appEmoji } from "../utils/emojiUtils";
+import { Command, UserLevel } from "../classes/Command";
 
 let roleReactors: Map<string, string> = new Map<string, string>();
 let roleReactCooldown = 3e3;
@@ -22,8 +23,22 @@ export default {
                 console.log("PATH", path)
                 console.log("EXISTS", existsSync(path))
                 if (existsSync(path)) {
-                    const cmd = (require(`../commands/${interaction.commandName}${desiredExt}`)).default;
-                    if (cmd && cmd.enabled && cmd.run) await cmd.run(interaction);
+                    let ran = false;
+                    const cmd: Command = (require(`../commands/${interaction.commandName}${desiredExt}`)).default;
+                    let member = interaction.guild.members.cache.get(interaction.user.id);
+                    if (cmd && cmd.enabled && cmd.run) {
+                        let subcommand = interaction.options.getSubcommand(false);
+                        let subcommandOption = subcommand ? cmd.options.find(o => (o.type === ApplicationCommandOptionType.Subcommand) && o.name === subcommand) : null;
+                        if((cmd.requiredRole && cmd.requiredRole !== UserLevel.DEFAULT)) {
+                            if(![UserLevel.ADMIN, UserLevel.DEV].includes(cmd.requiredRole) && member.permissions.has(PermissionFlagsBits.ModerateMembers, true)) return await cmd.run(interaction);
+                            if(((cmd.requiredRole === UserLevel.VIP) || (subcommandOption && subcommandOption.requiredRole === UserLevel.VIP) && (!member.roles.cache.has(config.roles.vip) || !member.permissions.has(PermissionFlagsBits.ModerateMembers, true)))) return await interaction.reply({flags: [MessageFlags.Ephemeral], content: `${await appEmoji(interaction.client, "nono")} You need the ${roleMention(config.roles.vip)} role to do that command.`});
+                            await cmd.run(interaction);
+                        } else if(subcommandOption && subcommandOption.requiredRole !== UserLevel.DEFAULT) {
+                            if(![UserLevel.ADMIN, UserLevel.DEV].includes(subcommandOption.requiredRole) && member.permissions.has(PermissionFlagsBits.ModerateMembers, true)) return await cmd.run(interaction);
+                            if((subcommandOption && subcommandOption.requiredRole === UserLevel.VIP) && (!member.roles.cache.has(config.roles.vip))) return await interaction.reply({flags: [MessageFlags.Ephemeral], content: `${await appEmoji(interaction.client, "nono")} You need the ${roleMention(config.roles.vip)} role to do that command.`});
+                            await cmd.run(interaction);
+                        } else await cmd.run(interaction);
+                    }
                     return;
 
                 } else {
