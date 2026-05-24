@@ -30,9 +30,9 @@ export const client: Client = new Client({ intents: [IntentsBitField.Flags.Guild
 
 export const player = createAudioPlayer({
     debug: true,
-	behaviors: {
-		noSubscriber: NoSubscriberBehavior.Pause,
-	},
+    behaviors: {
+        noSubscriber: NoSubscriberBehavior.Pause,
+    },
 });
 
 export let incompatibleInvites: Map<string, Invite> = new Map();
@@ -124,7 +124,7 @@ export const avg = async (url: string, hash: boolean = false): Promise<number | 
     const ac = await getAverageColor(url);
     const str = ac.hex;
     console.log(str)
-    if(hash) return str as string;
+    if (hash) return str as string;
     const noHash = str.split("#")[1];
     console.log(noHash)
     try {
@@ -250,10 +250,10 @@ async function initBot(c: Client) {
 
     let random = Math.floor(Math.random() * activities.length);
 
-        let act = activities[random];
-        if (!act) act = activities[0];
+    let act = activities[random];
+    if (!act) act = activities[0];
 
-        c.user.setPresence({ activities: [act] });
+    c.user.setPresence({ activities: [act] });
 
     setInterval(() => {
         let random = Math.floor(Math.random() * activities.length);
@@ -276,9 +276,9 @@ async function initBot(c: Client) {
             let existingNotificationId: string = existsSync(join(__dirname, "streamNotificationId.txt")) ? readFileSync(join(__dirname, "streamNotificationId.txt"), { encoding: "utf8" }) : null
             let existingNotificationMessage = existingNotificationId ? await notifChannel.messages.fetch(existingNotificationId) : null;
             let editMessage: Message<boolean> | null = null;
-            if (existingNotificationMessage && !existingNotificationMessage.partial && existingNotificationMessage.editable) {
-                editMessage = existingNotificationMessage
-            }
+            // if (existingNotificationMessage && !existingNotificationMessage.partial && existingNotificationMessage.editable) {
+            //     editMessage = existingNotificationMessage
+            // }
             let latestTimestamp: number = Date.now()
             writeFileSync(join(__dirname, "streamTimestamp.txt"), latestTimestamp.toString(), { encoding: 'utf8' });
 
@@ -331,19 +331,28 @@ async function initBot(c: Client) {
 
             if (!stream) return;
 
-            let offlineCon = new TMComponentBuilder().setAccentColor(config.brand_color);
-            offlineCon.addTextDisplay(`## coduh was Live${(stream.startDate && !Number.isNaN(stream.startDate)) ? ` on <t:${Math.floor(stream.startDate / 1000)}:f> (<t:${Math.floor(stream.startDate / 1000)}:R>)` : "!"}\n> ${stream.gameName !== "" ? `Played ${stream?.gameName || "a mystery game"} until <t:${Math.floor(Date.now() / 1000)}:f>` : `Streamed until <t:${Math.floor(Date.now() / 1000)}:f>`}`)
-            offlineCon.addSeparator(SeparatorSpacingSize.Large, false);
+            let channelUser = await twitchApiClient.users.getUserByName(process.env.TWITCH_CHANNEL_NAME);
+            if (!channelUser) return;
 
-            if (editMessage !== null) {
-                editMessage.edit({ components: [offlineCon.buildContainer()] }).then(m => {
+            setTimeout(async () => {
+                let vods = await twitchApiClient.videos.getVideosByUser(channelUser.id, { period: "day", orderBy: "time", type: "archive" });
+
+                let lastVod = vods.data[0];
+
+                let offlineCon = new TMComponentBuilder().setAccentColor(config.brand_color);
+                offlineCon.addTextDisplay(`## coduh was Live${(stream.startDate && !Number.isNaN(stream.startDate)) ? ` on <t:${Math.floor(stream.startDate / 1000)}:f> (<t:${Math.floor(stream.startDate / 1000)}:R>)` : "!"}\n> ${stream.gameName !== "" ? `Played ${stream?.gameName || "a mystery game"} until <t:${Math.floor(Date.now() / 1000)}:f>` : `Streamed until <t:${Math.floor(Date.now() / 1000)}:f>`}${lastVod ? `\n\n### [Click to Watch VOD](https://twitch.tv/videos/${lastVod.id})` : ""}`)
+                offlineCon.addSeparator(SeparatorSpacingSize.Large, false);
+
+                if (editMessage !== null) {
+                    editMessage.edit({ components: [offlineCon.buildContainer()] }).then(m => {
+                        writeFileSync(join(__dirname, "streamNotificationId.txt"), "", { encoding: 'utf8' });
+                        // writeJSONSync(join(__dirname, "streamData.json"), {}, { encoding: "utf8" });    
+                    })
+                } else {
                     writeFileSync(join(__dirname, "streamNotificationId.txt"), "", { encoding: 'utf8' });
-                    // writeJSONSync(join(__dirname, "streamData.json"), {}, { encoding: "utf8" });    
-                })
-            } else {
-                writeFileSync(join(__dirname, "streamNotificationId.txt"), "", { encoding: 'utf8' });
-                // writeJSONSync(join(__dirname, "streamData.json"), {}, { encoding: "utf8" });
-            }
+                    // writeJSONSync(join(__dirname, "streamData.json"), {}, { encoding: "utf8" });
+                }
+            }, 30e3)
         } catch (e) {
             console.log(e)
         }
@@ -423,7 +432,7 @@ async function initBot(c: Client) {
     setInterval(async () => {
         // Raffle Interval
         let raffle = (await raffleModel.find())?.[0] || null;
-        if(raffle) {
+        if (raffle) {
             let channel = client.guilds.cache.get(config.guild).channels.cache.get(raffle.channel_id) as TextChannel;
 
             let thirtySeconds = Date.now() + (30e3);
@@ -440,7 +449,7 @@ async function initBot(c: Client) {
                 thirtyWarnings.set(raffle.id, true);
                 fifteenWarnings.set(raffle.id, true);
                 sevenWarnings.set(raffle.id, true);
-                
+
                 let participants = raffle.participants;
                 let channel = client.guilds.cache.get(config.guild).channels.cache.get(raffle.channel_id) as TextChannel;
                 if (!raffle.winner_id) {
@@ -464,36 +473,36 @@ async function initBot(c: Client) {
                                 dbUser.set("points", dbUser.points + raffle.points);
                                 await dbUser.save();
                             }
-                            await raffleModel.findOneAndDelete({id: raffle.id});
+                            await raffleModel.findOneAndDelete({ id: raffle.id });
                             await dbUser.set("points", dbUser.points + raffle.points);
                             await dbUser.save();
-                            channel.send({content: `## ${await appEmoji(client, "yay")} ${userMention(winner.id)} won the raffle for **${raffle.points.toLocaleString()} ${config.point_name(false)}${raffle.points === 1 ? "" : "s"}**! ${await appEmoji(client, "stripj")}`})
+                            channel.send({ content: `## ${await appEmoji(client, "yay")} ${userMention(winner.id)} won the raffle for **${raffle.points.toLocaleString()} ${config.point_name(false)}${raffle.points === 1 ? "" : "s"}**! ${await appEmoji(client, "stripj")}` })
                             let logChannel = client.guilds.cache.get(config.guild).channels.cache.get(config.channels.logs) as TextChannel;
 
-                            logChannel.send({flags: [MessageFlags.IsComponentsV2], components: [logContainer("Raffle Won", `${userMention(winner.id)} (${winner.id}) won a raffle created by ${userMention(raffle.creator_id)} (${raffle.creator_id}) for ${raffle.points.toLocaleString()} ${config.point_name(true)}${raffle.points === 1 ? "" : "s"}\n### Participants (${raffle.participants.length.toLocaleString()})\n${raffle.participants.map((p: DBRaffleParticipant) => `- ${userMention(p.id)}`).join("\n")}`).buildContainer()]})
+                            logChannel.send({ flags: [MessageFlags.IsComponentsV2], components: [logContainer("Raffle Won", `${userMention(winner.id)} (${winner.id}) won a raffle created by ${userMention(raffle.creator_id)} (${raffle.creator_id}) for ${raffle.points.toLocaleString()} ${config.point_name(true)}${raffle.points === 1 ? "" : "s"}\n### Participants (${raffle.participants.length.toLocaleString()})\n${raffle.participants.map((p: DBRaffleParticipant) => `- ${userMention(p.id)}`).join("\n")}`).buildContainer()] })
 
                         } else {
-                            channel.send({content: `## ${await appEmoji(client, "noooo")} The raffle winner had a heart attack and fucking died`})
-                            await raffleModel.findOneAndDelete({id: raffle.id});
+                            channel.send({ content: `## ${await appEmoji(client, "noooo")} The raffle winner had a heart attack and fucking died` })
+                            await raffleModel.findOneAndDelete({ id: raffle.id });
                         }
 
                     } else {
-                        channel.send({content: `## ${await appEmoji(client, "smokee")} Nobody entered the raffle`})
-                        await raffleModel.findOneAndDelete({id: raffle.id});
+                        channel.send({ content: `## ${await appEmoji(client, "smokee")} Nobody entered the raffle` })
+                        await raffleModel.findOneAndDelete({ id: raffle.id });
                     }
-                } else await raffleModel.findOneAndDelete({id: raffle.id});
+                } else await raffleModel.findOneAndDelete({ id: raffle.id });
             }
 
             if ((raffleExpiration <= thirtySeconds) && !thirtyWarnings.has(raffle.id)) {
                 thirtyWarnings.set(raffle.id, true);
                 // await reply(client, null, `The raffle expires in 30 seconds`)
-                channel.send({content: `${await appEmoji(client, "pausej")} The raffle for ${raffle.points.toLocaleString()} ${config.point_name(true)}${raffle.points === 1 ? "" : "s"} expires <t:${Math.floor(raffle.expires_at / 1000)}:R>!`})
+                channel.send({ content: `${await appEmoji(client, "pausej")} The raffle for ${raffle.points.toLocaleString()} ${config.point_name(true)}${raffle.points === 1 ? "" : "s"} expires <t:${Math.floor(raffle.expires_at / 1000)}:R>!` })
             }
 
             if ((raffleExpiration <= fifteenSeconds) && !fifteenWarnings.has(raffle.id)) {
                 thirtyWarnings.set(raffle.id, true);
                 fifteenWarnings.set(raffle.id, true);
-                channel.send({content: `${await appEmoji(client, "pausej")} The raffle for ${raffle.points.toLocaleString()} ${config.point_name(true)}${raffle.points === 1 ? "" : "s"} expires <t:${Math.floor(raffle.expires_at / 1000)}:R>!`})
+                channel.send({ content: `${await appEmoji(client, "pausej")} The raffle for ${raffle.points.toLocaleString()} ${config.point_name(true)}${raffle.points === 1 ? "" : "s"} expires <t:${Math.floor(raffle.expires_at / 1000)}:R>!` })
 
             }
 
@@ -501,12 +510,12 @@ async function initBot(c: Client) {
                 thirtyWarnings.set(raffle.id, true);
                 fifteenWarnings.set(raffle.id, true);
                 sevenWarnings.set(raffle.id, true);
-                channel.send({content: `${await appEmoji(client, "pausej")} The raffle for ${raffle.points.toLocaleString()} ${config.point_name(true)}${raffle.points === 1 ? "" : "s"} expires <t:${Math.floor(raffle.expires_at / 1000)}:R>!`})
+                channel.send({ content: `${await appEmoji(client, "pausej")} The raffle for ${raffle.points.toLocaleString()} ${config.point_name(true)}${raffle.points === 1 ? "" : "s"} expires <t:${Math.floor(raffle.expires_at / 1000)}:R>!` })
             }
 
-            
+
         }
-    },1e3);
+    }, 1e3);
 }
 
 client.on(Events.ClientReady, async c => {
@@ -546,7 +555,7 @@ export async function logEvent(event: Events, args: { [key: string]: any }) {
         }
         case Events.GuildMemberRemove: {
             let member: GuildMember = args["member"];
-            if(member.guild.id !== config.guild) return;
+            if (member.guild.id !== config.guild) return;
             if (args["flag"]) {
                 logChannel.send({ flags: [MessageFlags.IsComponentsV2], components: [logContainer(`Member Left`, `${member.user.username} (${member.id})\n-# Their data will automatically be deleted (and all XP history lost) <t:${Math.floor(parseInt(args["flag"]) / 1000)}:R>`, "DANGER").buildContainer()] })
             } else {
@@ -571,13 +580,13 @@ export async function logEvent(event: Events, args: { [key: string]: any }) {
         }
         case Events.GuildRoleCreate: {
             let role: Role = args["role"];
-            if(role.guild.id !== config.guild) return;
+            if (role.guild.id !== config.guild) return;
             logChannel.send({ flags: [MessageFlags.IsComponentsV2], components: [logContainer(`Role Created`, `${role.name}`, "DEFAULT").buildContainer()] })
             break;
         }
         case Events.GuildRoleDelete: {
             let role: Role = args["role"];
-            if(role.guild.id !== config.guild) return;
+            if (role.guild.id !== config.guild) return;
             logChannel.send({ flags: [MessageFlags.IsComponentsV2], components: [logContainer(`Role Deleted`, `${role.name}`, "DANGER").buildContainer()] })
             break;
         }
@@ -585,7 +594,7 @@ export async function logEvent(event: Events, args: { [key: string]: any }) {
             let old_role: Role = args["old_role"];
             let new_role: Role = args["new_role"];
 
-            if(new_role.guild.id !== config.guild) return;
+            if (new_role.guild.id !== config.guild) return;
 
             let changes: { key: string, old_value: string, new_value: string }[] = [];
             let additions = [];
@@ -863,7 +872,7 @@ export async function logEvent(event: Events, args: { [key: string]: any }) {
             let oldMessage = o;
             let newMessage = n;
 
-            if(!oldMessage.content || !newMessage.content) return;
+            if (!oldMessage.content || !newMessage.content) return;
             if (oldMessage.content == newMessage.content) return;
             if (oldMessage.author.bot) return;
 
@@ -922,39 +931,37 @@ export async function logEvent(event: Events, args: { [key: string]: any }) {
 
 
             logChannel.send({
-	                embeds: [
-	                    new EmbedBuilder()
-	                        .setTitle(
-	                            `${o.member.user.username} (${
-	                                o.member.id
-	                            }) edited their message in ${
-	                                (o.channel as GuildBasedChannel).name
-	                            }`
-	                        )
-	                        .setURL(o.url)
-	                        .setDescription(humanPatch)
-                            .setFooter({text: "Happened"})
-	                        .setTimestamp(),
-	                ],
-	                files: [
-	                    new AttachmentBuilder(Buffer.from(patch), {
-	                        name: Buffer.from(o.id).toString("base64url"),
-	                    }),
-	                ],
-	            })
-	            .then((m) => {
-	                m.edit({
-	                    components: [
-	                        new ActionRowBuilder<ButtonBuilder>().addComponents(
-	                            new ButtonBuilder()
-	                                .setLabel("Show Diff")
-	                                .setCustomId(
-	                                    "show-diff"
-	                                ).setStyle(ButtonStyle.Primary)
-	                        ),
-	                    ],
-	                });
-                
+                embeds: [
+                    new EmbedBuilder()
+                        .setTitle(
+                            `${o.member.user.username} (${o.member.id
+                            }) edited their message in ${(o.channel as GuildBasedChannel).name
+                            }`
+                        )
+                        .setURL(o.url)
+                        .setDescription(humanPatch)
+                        .setFooter({ text: "Happened" })
+                        .setTimestamp(),
+                ],
+                files: [
+                    new AttachmentBuilder(Buffer.from(patch), {
+                        name: Buffer.from(o.id).toString("base64url"),
+                    }),
+                ],
+            })
+                .then((m) => {
+                    m.edit({
+                        components: [
+                            new ActionRowBuilder<ButtonBuilder>().addComponents(
+                                new ButtonBuilder()
+                                    .setLabel("Show Diff")
+                                    .setCustomId(
+                                        "show-diff"
+                                    ).setStyle(ButtonStyle.Primary)
+                            ),
+                        ],
+                    });
+
                 });
 
             break;
@@ -965,7 +972,7 @@ export async function logEvent(event: Events, args: { [key: string]: any }) {
             let owner = await guild.fetchOwner();
             let invite: Invite | null = incompatibleInvites.get(guild.id) || null;
 
-            logChannel.send({flags: [MessageFlags.IsComponentsV2], components: [logContainer(`Bot Left Guild`, `${guild.client.user.username} left a server, **${guild.name}** with ${guild.memberCount} member${guild.memberCount === 1 ? "" : "s"}\n-# ${guild.id} - Created <t:${Math.floor(guild.createdTimestamp / 1000)}:R>\n### Guild Owner\n${owner.user.username} - ${owner.user.id}${invite ? `\n### Invite Link (Bot-Generated)\nhttps://discord.com/invite/${invite.code}` : ""}`).buildContainer()]})
+            logChannel.send({ flags: [MessageFlags.IsComponentsV2], components: [logContainer(`Bot Left Guild`, `${guild.client.user.username} left a server, **${guild.name}** with ${guild.memberCount} member${guild.memberCount === 1 ? "" : "s"}\n-# ${guild.id} - Created <t:${Math.floor(guild.createdTimestamp / 1000)}:R>\n### Guild Owner\n${owner.user.username} - ${owner.user.id}${invite ? `\n### Invite Link (Bot-Generated)\nhttps://discord.com/invite/${invite.code}` : ""}`).buildContainer()] })
             break;
         }
     }
