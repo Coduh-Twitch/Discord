@@ -58,7 +58,7 @@ const config = {
             "9": "1504010717265789059", // Kiyoh
             "10": "1504010706645684286",// Frontrunner
         },
-        twitch_subscriber: "981079569836679178"
+        twitch_subscriber: "981079569836679178",
         vip: "1504274688556273685",
     },
     level_perks: {
