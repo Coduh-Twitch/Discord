@@ -19,7 +19,7 @@ export const calculateRequiredXP = (new_level: number): number => {
     if (dev_mode) return 1000 * new_level;
     if (new_level === 1) {
         return Math.round((new_level * 1000) * 1.1)
-    } else if (new_level === 10) {
+    } else if (new_level >= 10) {
         return Math.round((new_level * 1000) * 3)
     } else {
         return Math.round((new_level * 1000) * parseFloat(`2.${new_level}`))
