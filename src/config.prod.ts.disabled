@@ -27,6 +27,7 @@ const config = {
         movie_polls: "",
         announcements: "834901822757666824",
         movie_night_stage: "1491962302411571240",
+        honeypot: "1508956308437602344",
         media_channels: [
             {
                 emojis: { // food

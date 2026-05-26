@@ -220,6 +220,16 @@ async function initBot(c: Client) {
         await loadEvents(c);
         await loadCommands(c);
     })
+
+    let honeypotChannel = client.guilds.cache.get(config.guild).channels.cache.get(config.channels.honeypot) as TextChannel;
+    let honeypotMessages = await honeypotChannel.messages.fetch();
+    if(!honeypotMessages.find(m => m.author.id === client.user.id)) {
+        let honeypotContainer = new TMComponentBuilder();
+        honeypotContainer.setAccentColor(0xF8B929);
+        honeypotContainer.addTextDisplay(`## 🍯 Do not send messages in this channel\nThis channel is a honeypot designed to catch scammers and spam bots.\n\nIf you send a message here, it will result in a temporary timeout for your account, and you may be considered a bot and banned.`);
+
+        honeypotChannel.send({flags: [MessageFlags.IsComponentsV2], components: [honeypotContainer.buildContainer()]});
+    }
     // if (filteredCmds.length > 0) {
     // console.log(`Starting Twitch cmd check interval`)
     // await setInterval(async () => {
@@ -539,7 +549,7 @@ export function logContainer(heading: string, content: string, level: "DEFAULT" 
     return con;
 }
 
-export async function logEvent(event: Events, args: { [key: string]: any }) {
+export async function logEvent(event: Events | string, args: { [key: string]: any }) {
     console.log(`Received event ${event}`)
     const logChannel = client.guilds.cache.get(config.guild).channels.cache.get(config.channels.logs) as TextChannel
     switch (event) {
@@ -975,6 +985,17 @@ export async function logEvent(event: Events, args: { [key: string]: any }) {
             logChannel.send({ flags: [MessageFlags.IsComponentsV2], components: [logContainer(`Bot Left Guild`, `${guild.client.user.username} left a server, **${guild.name}** with ${guild.memberCount} member${guild.memberCount === 1 ? "" : "s"}\n-# ${guild.id} - Created <t:${Math.floor(guild.createdTimestamp / 1000)}:R>\n### Guild Owner\n${owner.user.username} - ${owner.user.id}${invite ? `\n### Invite Link (Bot-Generated)\nhttps://discord.com/invite/${invite.code}` : ""}`).buildContainer()] })
             break;
         }
+
+        case "honeypotCatch": {
+            let member: GuildMember = args["member"];
+            let message: Message = args["message"];
+
+            logChannel.send({flags: [MessageFlags.IsComponentsV2], components: [logContainer(`Honeypot Caught Member`, `${userMention(member.id)} (${member.id}) sent a message in ${channelMention(config.channels.honeypot)}\n\nThey were timed out for 24 hours\n### Message Content\n\`\`\`${message.content || "Empty"}\`\`\``).buildContainer()]})
+
+            if(message.deletable) await message.delete();
+
+            break;
+        }
     }
 }
 
@@ -1036,6 +1057,7 @@ client.on(Events.AutoModerationRuleDelete, async (rule) => { await logEvent(Even
 client.on(Events.AutoModerationActionExecution, async (execution) => { await logEvent(Events.AutoModerationActionExecution, { execution }) })
 client.on(Events.MessageUpdate, async (old_message, new_message) => { await logEvent(Events.MessageUpdate, { old_message, new_message }) })
 client.on(Events.GuildDelete, async (guild) => { await logEvent(Events.GuildDelete, { guild }) })
+client.on("honeypotCatch", async (member, message) => {await logEvent("honeypotCatch", {member, message})})
 
 client.login(process.env.TOKEN)
 twitchWs.start()

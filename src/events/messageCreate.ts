@@ -1,6 +1,6 @@
-import { blockQuote, EmbedType, Message, MessageFlags, PartialPollAnswer, PollAnswer, TextChannel, userMention } from "discord.js";
+import { blockQuote, EmbedType, Message, MessageFlags, PartialPollAnswer, PermissionFlagsBits, PollAnswer, TextChannel, userMention } from "discord.js";
 import { addXP, calculateGivenXP } from "../utils/xpUtils";
-import { dev_mode } from "..";
+import { client, dev_mode } from "..";
 import { userModel } from "../models/user";
 import { movieModel } from "../models/movies";
 import { buildMovieContainer, getMovieById, sendMoviePoll } from "../commands/movie";
@@ -55,6 +55,14 @@ export default {
         }
         if (message.author.bot) return;
         if (!dev_mode && (message.content.length < 5)) return;
+
+        if(message.channelId === config.channels.honeypot) {
+            if(!message.member.permissions.has(PermissionFlagsBits.ModerateMembers, true)) {
+                let member = message.member;
+                await member.timeout(((24 * 60) * 60) * 1000, "🍯 Caught by Honeypot")
+                client.emit("honeypotCatch", member, message);
+            }
+        }
 
         if (message.content.toLowerCase().trim().startsWith("pickme")) {
             let raffle = (await raffleModel.find())?.[0] || null;
