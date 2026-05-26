@@ -59,6 +59,7 @@ const config = {
             "10": "1504010706645684286",// Frontrunner
         },
         twitch_subscriber: "981079569836679178"
+        vip: "1504274688556273685",
     },
     level_perks: {
         "6": "Slowed XP Degredation",
