@@ -66,7 +66,7 @@ export default {
 
         if (message.content.toLowerCase().trim().startsWith("pickme")) {
             let raffle = (await raffleModel.find())?.[0] || null;
-            if (raffle) {
+            if (raffle && raffle.channel_id === message.channelId) {
                 let participants = raffle.participants;
                 if (!participants.some(p => p.id === message.author.id)) {
                     if (participants && ((participants.length <= 0) && raffle.creator_id === message.author.id)) {
