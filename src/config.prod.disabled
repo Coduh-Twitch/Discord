@@ -28,15 +28,7 @@ const config = {
         announcements: "834901822757666824",
         movie_night_stage: "1491962302411571240",
         honeypot: "1508956308437602344",
-        media_channels: [
-            {
-                emojis: { // food
-                    up: "🔥",
-                    down: "💩"
-                },
-                id: "1078928174949335061"
-            }
-        ]
+        media_channels: []
     },
     emojis: {
         upvote: "⬆️",
