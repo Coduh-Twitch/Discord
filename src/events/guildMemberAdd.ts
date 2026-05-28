@@ -1,8 +1,8 @@
 import { AttachmentBuilder, GuildMember, MessageFlags, TextChannel } from "discord.js";
-import config from "../config";
-import { TMComponentBuilder } from "../classes/ComponentBuilder";
+import config from "../config"
+import { TMComponentBuilder } from "../classes/ComponentBuilder"
 import { avg } from "..";
-import { userModel } from "../models/user";
+import { userModel } from "../models/user"
 
 
 

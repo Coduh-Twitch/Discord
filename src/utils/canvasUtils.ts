@@ -1,6 +1,6 @@
 import { Canvas, createCanvas, CanvasRenderingContext2D, Image } from "canvas";
 import { AttachmentBuilder, GuildMember, MessageFlags } from "discord.js";
-import { TMComponentBuilder } from "../classes/ComponentBuilder";
+import { TMComponentBuilder } from "../classes/ComponentBuilder"
 import { avg } from "..";
 
 function roundedImage(ctx, x, y, width, height, radius) {

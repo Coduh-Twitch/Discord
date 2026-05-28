@@ -1,12 +1,12 @@
 import { ApplicationCommandChoicesData, ApplicationCommandChoicesOption, ApplicationCommandOptionChoiceData, ApplicationCommandOptionType, AutocompleteInteraction, blockQuote, ButtonInteraction, ButtonStyle, channelMention, ChannelType, ChatInputCommandInteraction, codeBlock, Colors, ComponentType, ContainerBuilder, Events, GuildScheduledEvent, GuildScheduledEventCreateOptions, GuildScheduledEventEntityType, GuildScheduledEventPrivacyLevel, GuildScheduledEventRecurrenceRuleFrequency, LabelBuilder, MessageFlags, ModalBuilder, ModalSubmitInteraction, PermissionFlagsBits, Poll, PollData, PollLayoutType, roleMention, SeparatorSpacingSize, StageChannel, TextChannel, TextInputBuilder, TextInputStyle, User, userMention } from "discord.js";
-import { Command, CommandCategory } from "../classes/Command";
+import { Command, CommandCategory } from "../classes/Command"
 import axios, { AxiosResponse } from "axios";
-import { TMComponentBuilder } from "../classes/ComponentBuilder";
+import { TMComponentBuilder } from "../classes/ComponentBuilder"
 import { writeJSON, writeJSONSync } from "fs-extra";
 import { join } from "path";
-import config from "../config";
-import { movieModel } from "../models/movies";
-import { generateCustomId, parseCustomId } from "../utils/customIdUtils";
+import config from "../config"
+import { movieModel } from "../models/movies"
+import { generateCustomId, parseCustomId } from "../utils/customIdUtils"
 
 export interface TMDBGenre {
     id: number;

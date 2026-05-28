@@ -1,6 +1,6 @@
 import { ChannelType, Colors, Guild, GuildChannel, Invite, MessageFlags, PermissionFlagsBits, TextChannel } from "discord.js";
-import config from "../config";
-import { TMComponentBuilder } from "../classes/ComponentBuilder";
+import config from "../config"
+import { TMComponentBuilder } from "../classes/ComponentBuilder"
 import { incompatibleInvites, logContainer } from "..";
 
 export default {

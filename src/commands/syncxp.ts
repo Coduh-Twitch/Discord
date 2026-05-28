@@ -1,9 +1,9 @@
 import { ApplicationCommandOptionType, ChatInputCommandInteraction, Colors, ComponentType, MessageFlags, PermissionFlagsBits } from "discord.js";
-import { Command, CommandCategory, UserLevel } from "../classes/Command";
-import config from "../config";
+import { Command, CommandCategory, UserLevel } from "../classes/Command"
+import config from "../config"
 import axios from "axios";
-import { userModel } from "../models/user";
-import { TMComponentBuilder } from "../classes/ComponentBuilder";
+import { userModel } from "../models/user"
+import { TMComponentBuilder } from "../classes/ComponentBuilder"
 
 interface MEE6LeaderboardPlayer {
     avatar: string;

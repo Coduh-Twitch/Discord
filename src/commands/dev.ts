@@ -1,7 +1,7 @@
 import { ActionRowBuilder, ApplicationCommandOptionType, ButtonBuilder, ButtonInteraction, ButtonStyle, channelMention, ChannelType, ComponentType, formatEmoji, MessageFlags, parseEmoji, PermissionFlagsBits, roleMention, SeparatorSpacingSize, TextChannel, userMention } from "discord.js";
-import { Command, CommandCategory, UserLevel } from "../classes/Command";
-import { TMComponentBuilder } from "../classes/ComponentBuilder";
-import config from "../config";
+import { Command, CommandCategory, UserLevel } from "../classes/Command"
+import { TMComponentBuilder } from "../classes/ComponentBuilder"
+import config from "../config"
 import { dev_mode } from "..";
 
 const DevCommand: Command = {

@@ -1,5 +1,5 @@
 import { ActionRowBuilder, APIActionRowComponent, APIMessageComponentEmoji, APISelectMenuOption, Attachment, AttachmentBuilder, BaseSelectMenuBuilder, ButtonBuilder, ButtonStyle, ChannelSelectMenuBuilder, ChannelType, ComponentBuilder, ContainerBuilder, ContainerComponentBuilder, FileBuilder, MediaGalleryBuilder, MediaGalleryItemBuilder, MediaGalleryItemData, MentionableSelectMenuBuilder, PartialEmoji, RGBTuple, Role, RoleSelectMenuBuilder, SectionBuilder, SelectMenuType, SeparatorBuilder, SeparatorSpacingSize, Snowflake, StringSelectMenuBuilder, TextDisplayBuilder, ThumbnailBuilder, UnfurledMediaItem, UnfurledMediaItemData } from "discord.js";
-import { createCustomId, generateCustomId, parseCustomId, TowerMaidenInteractionInfo } from "../utils/customIdUtils";
+import { createCustomId, generateCustomId, parseCustomId, TowerMaidenInteractionInfo } from "../utils/customIdUtils"
 
 export class TMComponentBuilder {
     container: ContainerBuilder;

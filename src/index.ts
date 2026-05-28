@@ -3,8 +3,8 @@ import "dotenv/config"
 import { readdir, rename } from "fs";
 import { ensureFileSync, existsSync, readdirSync, readFileSync, readJSONSync, renameSync, writeFileSync, writeJSONSync } from "fs-extra";
 import { join } from "path";
-import { Command } from "./classes/Command";
-import { TMComponentBuilder } from "./classes/ComponentBuilder";
+import { Command } from "./classes/Command"
+import { TMComponentBuilder } from "./classes/ComponentBuilder"
 import { getAverageColor } from "fast-average-color-node";
 import config from "./config";
 import { EventSubWsListener } from "@twurple/eventsub-ws";
@@ -12,17 +12,17 @@ import { ApiClient, HelixCustomRewardRedemption, HelixStream } from "@twurple/ap
 import { StaticAuthProvider } from "@twurple/auth";
 import { post } from "axios";
 import mongoose from "mongoose";
-import { calculateRequiredXP, removeXP } from "./utils/xpUtils";
-import { DBUser, userModel } from "./models/user";
-import { CustomCommand, twitchCustomCommandModel } from "./models/twitchCustomCommand";
-import { pollModel, PollOption, PollOptions } from "./models/polls";
+import { calculateRequiredXP, removeXP } from "./utils/xpUtils"
+import { DBUser, userModel } from "./models/user"
+import { CustomCommand, twitchCustomCommandModel } from "./models/twitchCustomCommand"
+import { pollModel, PollOption, PollOptions } from "./models/polls"
 import os from "os"
 import diff_match_patch from "diff-match-patch";
 import { createPatch } from "diff";
-import { TemporaryFile } from "./classes/TemporaryFile";
+import { TemporaryFile } from "./classes/TemporaryFile"
 import { createAudioPlayer, generateDependencyReport, NoSubscriberBehavior } from "@discordjs/voice";
-import { DBRaffleParticipant, raffleModel } from "./models/raffle";
-import { appEmoji } from "./utils/emojiUtils";
+import { DBRaffleParticipant, raffleModel } from "./models/raffle"
+import { appEmoji } from "./utils/emojiUtils"
 import { execSync } from "child_process";
 
 // throw new Error(generateDependencyReport());
@@ -43,8 +43,8 @@ let thirtyWarnings: Map<string, boolean> = new Map();
 let fifteenWarnings: Map<string, boolean> = new Map();
 let sevenWarnings: Map<string, boolean> = new Map();
 
-// export const dev_mode = process.argv.includes("-dev");
-export const dev_mode = os.hostname() !== "duckyserver";
+export const dev_mode = process.argv.includes("-dev");
+// export const dev_mode = os.hostname() !== "duckyserver";
 console.log("IS DEV MODE")
 // export const dev_mode = false;
 // export const desiredExt = ".ts"
@@ -168,10 +168,12 @@ async function loadEvents(c: Client) {
 }
 
 async function loadCommands(c: Client) {
-    const files = readdirSync(join(__dirname, "commands"));
+    const filesPath = join(process.cwd(), `${dev_mode ? "src" : "dist/src"}`, "commands")
+    console.log(`Checking commands dir: ${filesPath}`)
+    const files = readdirSync(filesPath);
     let cmds: ApplicationCommandData[] = [];
     files.filter(f => f.endsWith(desiredExt)).forEach(file => {
-        const cmd: Command = (require(join(__dirname, "commands", file))).default;
+        const cmd: Command = (require(join(filesPath, file))).default;
         const cmdName = cmd.name;
         if (!cmd) return console.log(`Didn't load command file ${file} because it's not formatted correctly.`)
         if (!cmd.enabled) return console.log(`Didn't load command file ${file} because it's disabled`)

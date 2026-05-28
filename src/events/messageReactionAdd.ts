@@ -1,6 +1,6 @@
 import { AttachmentBuilder, flatten, formatEmoji, MessageFlags, MessageReaction, MessageReactionEventDetails, ReactionType, User } from "discord.js";
-import config from "../config";
-import { TMComponentBuilder } from "../classes/ComponentBuilder";
+import config from "../config"
+import { TMComponentBuilder } from "../classes/ComponentBuilder"
 
 export default {
     enabled: true,

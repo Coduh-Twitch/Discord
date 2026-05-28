@@ -1,16 +1,16 @@
 import { ApplicationCommandOptionType, AttachmentBuilder, blockQuote, ChatInputCommandInteraction, Colors, Events, MessageFlags, PermissionFlagsBits, TextBasedChannel, User, userMention, VoiceBasedChannel } from "discord.js";
-import { Command, CommandCategory, UserLevel } from "../classes/Command";
+import { Command, CommandCategory, UserLevel } from "../classes/Command"
 import { Canvas, CanvasGradient, CanvasRenderingContext2D, createCanvas, Image } from "canvas";
-import { TMComponentBuilder } from "../classes/ComponentBuilder";
-import { memberWelcomeImage } from "../utils/canvasUtils";
+import { TMComponentBuilder } from "../classes/ComponentBuilder"
+import { memberWelcomeImage } from "../utils/canvasUtils"
 import { createAudioPlayer, createAudioResource, joinVoiceChannel, NoSubscriberBehavior, StreamType, VoiceConnection } from "@discordjs/voice";
 import { EdgeTTS } from "node-edge-tts";
 import { join } from "path";
 import { readFileSync, writeFileSync } from "fs";
 import { dev_mode, player } from "..";
-import { userModel } from "../models/user";
-import config from "../config";
-import { calculateGivenXP, calculateRequiredXP } from "../utils/xpUtils";
+import { userModel } from "../models/user"
+import config from "../config"
+import { calculateGivenXP, calculateRequiredXP } from "../utils/xpUtils"
 import { appendFileSync, createReadStream, ensureFileSync } from "fs-extra";
 import { get } from "axios";
 

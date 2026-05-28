@@ -1,12 +1,12 @@
 import { ApplicationCommandOptionChoiceData, ApplicationCommandOptionType, AutocompleteInteraction, ButtonInteraction, ButtonStyle, ChatInputCommandInteraction, Colors, Component, ComponentType, Locale, MessageFlags, resolveColor, SelectMenuComponent, SeparatorSpacingSize } from "discord.js";
-import { Command, CommandCategory } from "../classes/Command";
-import { TMComponentBuilder } from "../classes/ComponentBuilder";
+import { Command, CommandCategory } from "../classes/Command"
+import { TMComponentBuilder } from "../classes/ComponentBuilder"
 import { getAverageColor } from "fast-average-color-node";
-import { DBUser, userModel } from "../models/user";
-import { appEmoji } from "../utils/emojiUtils";
+import { DBUser, userModel } from "../models/user"
+import { appEmoji } from "../utils/emojiUtils"
 import axios from "axios";
 import { buildMovieContainer, formatMovieString, getMovieById, TMDBMovieFull } from "./movie";
-import config from "../config";
+import config from "../config"
 import { client } from "..";
 
 async function favoriteMovieString(movies: string[]): Promise<string> {

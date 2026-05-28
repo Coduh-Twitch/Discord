@@ -1,13 +1,13 @@
 import { ApplicationCommandOptionType, ButtonInteraction, ButtonStyle, ChatInputCommandInteraction, Component, ComponentType, ContextMenuCommandInteraction, Events, MessageFlags, PermissionFlagsBits, SeparatorSpacingSize, userMention } from "discord.js";
-import { Command, CommandCategory } from "../classes/Command";
-import { TMComponentBuilder } from "../classes/ComponentBuilder";
+import { Command, CommandCategory } from "../classes/Command"
+import { TMComponentBuilder } from "../classes/ComponentBuilder"
 import { version } from "../../package.json";
 import { avg, dev_mode, reply, toHHMMSS } from "..";
-import config from "../config";
+import config from "../config"
 import { hostname } from "os";
-import { DBUser, userModel } from "../models/user";
-import { calculateRequiredXP } from "../utils/xpUtils";
-import { appEmoji } from "../utils/emojiUtils";
+import { DBUser, userModel } from "../models/user"
+import { calculateRequiredXP } from "../utils/xpUtils"
+import { appEmoji } from "../utils/emojiUtils"
 
 const XPCommand: Command = {
     enabled: true,

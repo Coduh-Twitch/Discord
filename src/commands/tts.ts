@@ -1,14 +1,14 @@
 import { ApplicationCommandOptionType, AttachmentBuilder, blockQuote, channelMention, ChatInputCommandInteraction, cleanContent, Colors, Events, MessageFlags, PermissionFlagsBits, TextBasedChannel, User, userMention, VoiceBasedChannel } from "discord.js";
-import { Command, CommandCategory, UserLevel } from "../classes/Command";
+import { Command, CommandCategory, UserLevel } from "../classes/Command"
 import { Canvas, CanvasGradient, CanvasRenderingContext2D, createCanvas, Image } from "canvas";
-import { TMComponentBuilder } from "../classes/ComponentBuilder";
-import { memberWelcomeImage } from "../utils/canvasUtils";
+import { TMComponentBuilder } from "../classes/ComponentBuilder"
+import { memberWelcomeImage } from "../utils/canvasUtils"
 import { AudioPlayer, AudioPlayerStatus, createAudioPlayer, createAudioResource, joinVoiceChannel, NoSubscriberBehavior, StreamType, VoiceConnection } from "@discordjs/voice";
 import { EdgeTTS } from "node-edge-tts";
 import { join } from "path";
 import { readFileSync } from "fs";
 import { client, player } from "..";
-import { appEmoji } from "../utils/emojiUtils";
+import { appEmoji } from "../utils/emojiUtils"
 
 enum Voice {
     MALE = "en-US-ChristopherNeural",

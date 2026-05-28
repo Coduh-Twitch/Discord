@@ -1,11 +1,11 @@
 import { ChatInputCommandInteraction, Events, MessageFlags, PermissionFlagsBits, blockQuote } from "discord.js";
-import { Command, CommandCategory, UserLevel } from "../classes/Command";
-import { TMComponentBuilder } from "../classes/ComponentBuilder";
+import { Command, CommandCategory, UserLevel } from "../classes/Command"
+import { TMComponentBuilder } from "../classes/ComponentBuilder"
 import { version } from "../../package.json";
 import { dev_mode, reply, toHHMMSS } from "..";
-import config from "../config";
+import config from "../config"
 import { hostname } from "os";
-import GitUtils from "../utils/gitUtils";
+import GitUtils from "../utils/gitUtils"
 
 const PingCommand: Command = {
     enabled: true,

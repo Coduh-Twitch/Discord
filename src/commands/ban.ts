@@ -1,8 +1,8 @@
 import { ApplicationCommandOptionType, ButtonInteraction, ButtonStyle, Colors, Component, ComponentType, MessageFlags, PermissionFlagsBits, TextChannel, userMention } from "discord.js";
-import { Command, CommandCategory, UserLevel } from "../classes/Command";
-import config from "../config";
+import { Command, CommandCategory, UserLevel } from "../classes/Command"
+import config from "../config"
 import { dev_mode, logContainer } from "..";
-import { TMComponentBuilder } from "../classes/ComponentBuilder";
+import { TMComponentBuilder } from "../classes/ComponentBuilder"
 
 const BanCommand: Command = {
     enabled: true,

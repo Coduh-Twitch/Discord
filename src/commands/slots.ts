@@ -1,9 +1,9 @@
 import { ApplicationCommandOptionType, Colors, formatEmoji, MessageFlags, SeparatorSpacingSize, userMention, VoiceConnectionStates } from "discord.js";
-import { Command, CommandCategory } from "../classes/Command";
-import { userModel } from "../models/user";
-import { TMComponentBuilder } from "../classes/ComponentBuilder";
-import { appEmoji } from "../utils/emojiUtils";
-import config from "../config";
+import { Command, CommandCategory } from "../classes/Command"
+import { userModel } from "../models/user"
+import { TMComponentBuilder } from "../classes/ComponentBuilder"
+import { appEmoji } from "../utils/emojiUtils"
+import config from "../config"
 
 let rollers: Set<string> = new Set();
 

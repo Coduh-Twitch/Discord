@@ -1,5 +1,5 @@
 import { Events, GuildMember } from "discord.js";
-import { userModel } from "../models/user";
+import { userModel } from "../models/user"
 import { logEvent } from "..";
 
 export default {

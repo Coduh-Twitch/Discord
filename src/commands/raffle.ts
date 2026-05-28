@@ -1,8 +1,8 @@
 import { ApplicationCommandOptionType, blockQuote, MessageFlags, PermissionFlagsBits, userMention } from "discord.js";
-import { Command, CommandCategory, UserLevel } from "../classes/Command";
-import config from "../config";
-import { raffleModel } from "../models/raffle";
-import { appEmoji } from "../utils/emojiUtils";
+import { Command, CommandCategory, UserLevel } from "../classes/Command"
+import config from "../config"
+import { raffleModel } from "../models/raffle"
+import { appEmoji } from "../utils/emojiUtils"
 
 const RaffleCommand: Command = {
     enabled: true,

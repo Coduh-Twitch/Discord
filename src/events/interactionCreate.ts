@@ -1,14 +1,14 @@
 import { ApplicationCommandOptionType, AutocompleteInteraction, BaseInteraction, ButtonInteraction, ChatInputCommandInteraction, codeBlock, Message, MessageFlags, PermissionFlagsBits, roleMention } from "discord.js";
 import { join } from "path";
 import { desiredExt, dev_mode } from "..";
-import { twitchCustomCommandModel } from "../models/twitchCustomCommand";
+import { twitchCustomCommandModel } from "../models/twitchCustomCommand"
 import { existsSync } from "fs-extra";
-import config from "../config";
-import { TemporaryFile } from "../classes/TemporaryFile";
-import { TMComponentBuilder } from "../classes/ComponentBuilder";
-import { parseCustomId } from "../utils/customIdUtils";
-import { appEmoji } from "../utils/emojiUtils";
-import { Command, UserLevel } from "../classes/Command";
+import config from "../config"
+import { TemporaryFile } from "../classes/TemporaryFile"
+import { TMComponentBuilder } from "../classes/ComponentBuilder"
+import { parseCustomId } from "../utils/customIdUtils"
+import { appEmoji } from "../utils/emojiUtils"
+import { Command, UserLevel } from "../classes/Command"
 
 let roleReactors: Map<string, string> = new Map<string, string>();
 let roleReactCooldown = 3e3;

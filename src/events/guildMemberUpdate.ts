@@ -1,10 +1,10 @@
 import { blockQuote, channelMention, GuildMember, MessageFlags, SeparatorSpacingSize, TextChannel, userMention } from "discord.js";
-import config from "../config";
+import config from "../config"
 import { avg } from "..";
-import { TMComponentBuilder } from "../classes/ComponentBuilder";
-import { userModel } from "../models/user";
-import { memberWelcomeImage } from "../utils/canvasUtils";
-import { appEmoji } from "../utils/emojiUtils";
+import { TMComponentBuilder } from "../classes/ComponentBuilder"
+import { userModel } from "../models/user"
+import { memberWelcomeImage } from "../utils/canvasUtils"
+import { appEmoji } from "../utils/emojiUtils"
 import { post } from "axios";
 
 

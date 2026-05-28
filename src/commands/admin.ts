@@ -1,9 +1,9 @@
 import { ApplicationCommandOptionType, blockQuote, MessageFlags, PermissionFlagsBits, userMention } from "discord.js";
-import { Command, CommandCategory, UserLevel } from "../classes/Command";
-import { DBUser, userModel } from "../models/user";
-import { addXP, calculateRequiredXP, canLevelDown, canLevelUp, levelDown, levelUp } from "../utils/xpUtils";
+import { Command, CommandCategory, UserLevel } from "../classes/Command"
+import { DBUser, userModel } from "../models/user"
+import { addXP, calculateRequiredXP, canLevelDown, canLevelUp, levelDown, levelUp } from "../utils/xpUtils"
 import { Document } from "mongoose";
-import config from "../config";
+import config from "../config"
 
 export const AdminCommand: Command = {
     enabled: true,

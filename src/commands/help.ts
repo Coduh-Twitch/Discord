@@ -1,8 +1,8 @@
 import { ApplicationCommandOptionType, blockQuote, GuildMember, MessageFlags, PermissionFlagsBits, SeparatorSpacingSize } from "discord.js";
-import { Command, CommandCategory, UserLevel } from "../classes/Command";
-import { TMComponentBuilder } from "../classes/ComponentBuilder";
+import { Command, CommandCategory, UserLevel } from "../classes/Command"
+import { TMComponentBuilder } from "../classes/ComponentBuilder"
 import { globalCommandMap } from "..";
-import config from "../config";
+import config from "../config"
 
 const HelpCommand: Command = {
     enabled: true,

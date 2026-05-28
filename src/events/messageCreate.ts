@@ -1,14 +1,14 @@
 import { blockQuote, EmbedType, Message, MessageFlags, PartialPollAnswer, PermissionFlagsBits, PollAnswer, TextChannel, userMention } from "discord.js";
-import { addXP, calculateGivenXP } from "../utils/xpUtils";
+import { addXP, calculateGivenXP } from "../utils/xpUtils"
 import { client, dev_mode } from "..";
-import { userModel } from "../models/user";
-import { movieModel } from "../models/movies";
-import { buildMovieContainer, getMovieById, sendMoviePoll } from "../commands/movie";
-import config from "../config";
-import { addPoints } from "../utils/pointUtils";
-import { DBRaffleParticipant, raffleModel } from "../models/raffle";
-import { appEmoji } from "../utils/emojiUtils";
-import { getMee6Leaderboard } from "../commands/syncxp";
+import { userModel } from "../models/user"
+import { movieModel } from "../models/movies"
+import { buildMovieContainer, getMovieById, sendMoviePoll } from "../commands/movie"
+import config from "../config"
+import { addPoints } from "../utils/pointUtils"
+import { DBRaffleParticipant, raffleModel } from "../models/raffle"
+import { appEmoji } from "../utils/emojiUtils"
+import { getMee6Leaderboard } from "../commands/syncxp"
 
 export default {
     enabled: true,
