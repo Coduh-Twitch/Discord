@@ -40,7 +40,8 @@ const config = {
                 },
                 id: "1492652051874713630"
             }
-        ]
+        ],
+        xp_ignore_categories: []
     },
     emojis: {
         upvote: "⬆️",

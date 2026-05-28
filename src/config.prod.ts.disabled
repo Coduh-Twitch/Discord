@@ -28,7 +28,8 @@ const config = {
         announcements: "834901822757666824",
         movie_night_stage: "1491962302411571240",
         honeypot: "1508956308437602344",
-        media_channels: []
+        media_channels: [],
+        xp_ignore_categories: ["1485249001313013762", "1489899545533087844", "834901822757666820", "1485249368956076203"] // Mods, Archive, Welcome, Coduh Live
     },
     emojis: {
         upvote: "⬆️",

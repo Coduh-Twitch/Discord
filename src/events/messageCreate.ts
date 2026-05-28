@@ -8,6 +8,7 @@ import config from "../config";
 import { addPoints } from "../utils/pointUtils";
 import { DBRaffleParticipant, raffleModel } from "../models/raffle";
 import { appEmoji } from "../utils/emojiUtils";
+import { getMee6Leaderboard } from "../commands/syncxp";
 
 export default {
     enabled: true,
@@ -95,8 +96,29 @@ export default {
             }
         }
 
-        await addXP(message.member, message.content);
-        await addPoints(message.member, message.content);
-        await userModel.findOneAndUpdate({ id: message.author.id }, { lastMessageTimestamp: Date.now() })
+        let channel: TextChannel = message.channel as TextChannel;
+
+        if(channel.parent && !config.channels.xp_ignore_categories.includes(channel.id)) {
+            await addXP(message.member, message.content);
+            await addPoints(message.member, message.content);
+            let dbUser = await userModel.findOne({id: message.author.id});
+
+            dbUser.set("lastMessageTimestamp", Date.now());
+            dbUser.set("messages", dbUser.messages + 1);
+
+            if(!dbUser.synced) {
+                let mee6Leaderboard = await getMee6Leaderboard(message.guild.id);
+                if(mee6Leaderboard && mee6Leaderboard?.length > 0) {
+                    let player = mee6Leaderboard.find(p => p.id === dbUser.id);
+                    if(player && player?.message_count > 0) {
+                        dbUser.set("messages", player.message_count);
+                        dbUser.set("synced", true);
+                        console.log(`Synced message_count for user ${dbUser.id} (${player.message_count.toLocaleString()} message(s))`)
+                    }
+                }
+            }
+
+            await dbUser.save();
+        }
     }
 }

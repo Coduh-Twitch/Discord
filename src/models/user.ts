@@ -6,7 +6,9 @@ export interface DBUser {
     level: number;
     lastMessageTimestamp: number;
     points: number;
+    messages: number;
     shownWelcomeMessage: boolean;
+    synced: boolean;
     deletion_flag?: number;
     favorite_movies: string[];
 }
@@ -17,6 +19,14 @@ const data = new Schema<DBUser>({
     points: {
         type: Number,
         default: 0
+    },
+    messages: {
+        type: Number,
+        default: 0
+    },
+    synced: {
+        type: Boolean,
+        default: false
     },
     level: Number,
     lastMessageTimestamp: Number,

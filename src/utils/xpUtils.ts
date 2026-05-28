@@ -7,7 +7,7 @@ import { appEmoji } from "./emojiUtils"
 
 export const calculateGivenXP = (message_content: string, is_sub: boolean = false): number => {
     let amt: number = 0;
-    if (message_content.length < 10) { amt = Math.floor(Math.random() * 10); return amt } else { amt = Math.round(((Math.random() * 3) + 1) * 6) }
+    if (message_content.length < 10) { amt = Math.floor(Math.random() * 5); return amt } else { amt = Math.round(((Math.random() * 3) + 1) * 6) }
 
     if (is_sub) amt = amt * config.xp_multipliers.sub;
     amt = Math.round(amt * config.xp_multipliers.base);
@@ -15,14 +15,15 @@ export const calculateGivenXP = (message_content: string, is_sub: boolean = fals
     return amt;
 }
 
-export const calculateRequiredXP = (new_level: number): number => {
-    if (dev_mode) return 1000 * new_level;
+export const calculateRequiredXP = (new_level: number, dev: boolean = false): number => {
+    // dev = dev_mode;
+    if (dev) return 1000 * new_level;
     if (new_level === 1) {
-        return Math.round((new_level * 1000) * 1.1)
+        return Math.round((new_level * 1000) * 1.3)
     } else if (new_level >= 10) {
-        return Math.round((new_level * 1000) * 3)
+        return Math.round((new_level * 1000) * 3 * (new_level / 10))
     } else {
-        return Math.round((new_level * 1000) * parseFloat(`2.${new_level}`))
+        return Math.round((new_level * 1000) * parseFloat(`1.${new_level}`) * 1.5)
     }
 
 }
@@ -139,7 +140,7 @@ export const addXP = async (member: GuildMember, content: string): Promise<DBUse
         dbUser.set("xp", new_xp);
         let doc: DBUser = await dbUser.save();
         if (canLevelUp(doc.level, doc.xp)) doc = await levelUp(member, doc.level)
-        console.log(`Added ${xp_to_give} XP to user ${member.id} (new xp: ${doc.xp} lvl ${doc.level})`)
+        console.log(`Added ${xp_to_give} XP to user ${member.id} (new xp: ${doc.xp.toLocaleString()} lvl ${doc.level})`)
         return doc;
     } catch (e) {
         console.log(`Failed to add xp to user ${member.id}`, e)

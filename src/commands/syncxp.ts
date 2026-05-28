@@ -19,7 +19,7 @@ interface MEE6LeaderboardPlayer {
     level: number;
 }
 
-async function getMee6Leaderboard(guildId: string | null = null): Promise<MEE6LeaderboardPlayer[]> {
+export async function getMee6Leaderboard(guildId: string | null = null): Promise<MEE6LeaderboardPlayer[]> {
     try {
 
         if (!guildId) guildId = config.guild;
@@ -108,7 +108,7 @@ const SyncXpCommand: Command = {
         let reply = await interaction.reply({ flags: [MessageFlags.Ephemeral, MessageFlags.IsComponentsV2], components: [reviewContainer.buildContainer()], withResponse: true });
 
         reply.resource.message.awaitMessageComponent({ componentType: ComponentType.Button, filter: i => i.user.id === interaction.user.id, time: confirmationTimeout }).then(async r => {
-
+            
         }, async (e) => {
             if (interaction.replied) await interaction.editReply({ components: [timeoutContainer.buildContainer()] })
 
