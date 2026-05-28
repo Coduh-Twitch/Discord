@@ -65,6 +65,28 @@ export default {
             }
         }
 
+        // Point Freebies
+        let dbUser = await userModel.findOne({id: message.author.id});
+        if(!dbUser) {
+            let newUser = new userModel({
+                xp: 0,
+                messages: 1,
+                synced: false,
+                freebie: true,
+                points: 1000,
+                level: 0
+            })
+
+            await newUser.save();
+            await message.react(config.emojis.points);
+        } else if(!dbUser.freebie) {
+            dbUser.set("freebie", true);
+            dbUser.set("points", (dbUser.points || 0) + 1000);
+
+            await dbUser.save();
+            await message.react(config.emojis.points);
+        }
+
         if (message.content.toLowerCase().trim().startsWith("pickme")) {
             let raffle = (await raffleModel.find())?.[0] || null;
             if (raffle && raffle.channel_id === message.channelId) {

@@ -9,6 +9,7 @@ export interface DBUser {
     messages: number;
     shownWelcomeMessage: boolean;
     synced: boolean;
+    freebie: boolean;
     deletion_flag?: number;
     favorite_movies: string[];
 }
@@ -25,6 +26,10 @@ const data = new Schema<DBUser>({
         default: 0
     },
     synced: {
+        type: Boolean,
+        default: false
+    },
+    freebie: {
         type: Boolean,
         default: false
     },
