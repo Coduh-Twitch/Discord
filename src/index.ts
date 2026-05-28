@@ -298,8 +298,8 @@ async function initBot(c: Client) {
             if ((!stream || !stream?.startDate || !stream?.gameName || !stream?.title)) stream = null;
 
             const liveCon = new TMComponentBuilder().setAccentColor(config.brand_color);
-            liveCon.addTextDisplay(`-# <@&${config.roles.members}>\n# [coduh is Live!](https://twitch.tv/coduh)`)
-            if (stream && stream?.startDate && stream?.gameName && stream?.title) liveCon.addTextDisplay(`> ${stream?.gameName !== "" ? `(${stream?.gameName}) ` : ``}${stream?.title}`)
+            liveCon.addTextDisplay(`-# <@&${config.roles.members}>\n# [${((await stream.getUser()).displayName) ?? process.env.TWITCH_CHANNEL_NAME} is Live!](https://twitch.tv/${process.env.TWITCH_CHANNEL_NAME})`)
+            if (stream && stream?.startDate && stream?.gameName && stream?.title) liveCon.addTextDisplay(`> ${stream?.title}${stream?.gameName !== "" ? `\n-# Playing **${stream?.gameName}**` : ``}`)
             liveCon.addSeparator(SeparatorSpacingSize.Large, false);
             if (stream && stream.getThumbnailUrl) liveCon.addMediaGallery([{ media: { url: stream?.getThumbnailUrl(1920, 1080) } }])
 
@@ -350,9 +350,15 @@ async function initBot(c: Client) {
                 let vods = await twitchApiClient.videos.getVideosByUser(channelUser.id, { period: "day", orderBy: "time", type: "archive" });
 
                 let lastVod = vods.data[0];
+                if(lastVod && lastVod.userId) {
+                    let apiChannel = await twitchApiClient.channels.getChannelInfoById(lastVod.userId);
+                    if(apiChannel) {
+                        if(!stream.gameName || stream.gameName === "") stream.gameName = apiChannel.gameName;
+                    }
+                }
 
                 let offlineCon = new TMComponentBuilder().setAccentColor(config.brand_color);
-                offlineCon.addTextDisplay(`## coduh was Live${(stream.startDate && !Number.isNaN(stream.startDate)) ? ` on <t:${Math.floor(stream.startDate / 1000)}:f> (<t:${Math.floor(stream.startDate / 1000)}:R>)` : "!"}\n> ${stream.gameName !== "" ? `Played ${stream?.gameName || "a mystery game"} until <t:${Math.floor(Date.now() / 1000)}:f>` : `Streamed until <t:${Math.floor(Date.now() / 1000)}:f>`}${lastVod ? `\n\n### [Click to Watch VOD](https://twitch.tv/videos/${lastVod.id})` : ""}`)
+                offlineCon.addTextDisplay(`### ${channelUser.displayName} was Live${(stream.startDate && !Number.isNaN(stream.startDate)) ? ` on <t:${Math.floor(stream.startDate / 1000)}:f> (<t:${Math.floor(stream.startDate / 1000)}:R>)` : "!"}\n> ${stream.gameName !== "" ? `Played ${stream?.gameName || "a mystery game"} until <t:${Math.floor(Date.now() / 1000)}:f>` : `Streamed from <t:${Math.floor(stream.startDate / 1000)}:t> to <t:${Math.floor(Date.now() / 1000)}:t>`}${lastVod ? `\n### [Click to Watch VOD](https://twitch.tv/videos/${lastVod.id})` : ""}`)
                 offlineCon.addSeparator(SeparatorSpacingSize.Large, false);
 
                 if (editMessage !== null) {
@@ -535,7 +541,7 @@ client.on(Events.ClientReady, async c => {
     const labs = c.guilds.cache.get(config.guild).channels.cache.get(config.channels.labs) as TextChannel;
     const startCon = new TMComponentBuilder().setAccentColor(config.brand_color);
     await c.application.commands.fetch();
-    startCon.addTextDisplay(`-# <t:${Math.floor(Date.now() / 1000)}:F>\n## Bot is Starting...\n> \`Env\` | ${dev_mode ? "DEVELOPMENT" : "PRODUCTION"}\n> \`Hostname\` | ${os.hostname}\n> \`Polls Integration?\` | ${config.polls_enabled ? "Yes" : "No"}\n> \`Commands\` ${c.application.commands.cache.size}\n${c.application.commands.cache.map(cc => `${cc.name}`).join(", ")}`)
+    startCon.addTextDisplay(`-# <t:${Math.floor(Date.now() / 1000)}:F>\n## Bot is Starting...\n> \`Env\` | ${dev_mode ? "DEVELOPMENT" : "PRODUCTION"}\n> \`Hostname\` | ${os.hostname()}\n> \`Twitch User\` | ${process.env.TWITCH_CHANNEL_NAME}\n> \`Polls Integration?\` | ${config.polls_enabled ? "Yes" : "No"}\n> \`Commands\` ${c.application.commands.cache.size}\n${c.application.commands.cache.map(cc => `${cc.name}`).join(", ")}`)
     labs.send({ components: [startCon.buildContainer()], flags: [MessageFlags.IsComponentsV2] })
     let osname = os.platform().toLowerCase() !== "win32" ? ((await execSync(`cat /etc/os-release | grep "^NAME=\".*\"" | sed 's/NAME="//' | sed 's/"//'`).toString()) || os.release()) : os.release();
     console.log(`[${os.userInfo({encoding: "utf8"}).username}@${os.hostname()} ${dev_mode ? "DEVELOPMENT" : "PRODUCTION"}] Client logged in as ${c.user.username} on ${osname}`)
