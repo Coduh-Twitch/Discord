@@ -23,6 +23,7 @@ import { TemporaryFile } from "./classes/TemporaryFile";
 import { createAudioPlayer, generateDependencyReport, NoSubscriberBehavior } from "@discordjs/voice";
 import { DBRaffleParticipant, raffleModel } from "./models/raffle";
 import { appEmoji } from "./utils/emojiUtils";
+import { execSync } from "child_process";
 
 // throw new Error(generateDependencyReport());
 
@@ -42,7 +43,8 @@ let thirtyWarnings: Map<string, boolean> = new Map();
 let fifteenWarnings: Map<string, boolean> = new Map();
 let sevenWarnings: Map<string, boolean> = new Map();
 
-export const dev_mode = process.argv.includes("-dev");
+// export const dev_mode = process.argv.includes("-dev");
+export const dev_mode = os.hostname() !== "duckyserver";
 console.log("IS DEV MODE")
 // export const dev_mode = false;
 // export const desiredExt = ".ts"
@@ -75,31 +77,31 @@ export const reply = async (interaction: ChatInputCommandInteraction, container:
     return r;
 }
 
-const degradeMs = 604800 * 1000;
+const degradeMs = 2592000 * 1000;
+const premiumDegradeMs = degradeMs / 2;
+const degradeCheckInterval = degradeMs / 2;
 async function degredation(c: Client) {
     const uploadThreshold = new Date(Date.now() - degradeMs);
+    const premiumUploadThreshold = new Date(Date.now() - premiumDegradeMs);
     const dbUsers = await userModel.find({ level: { $gt: 0 } });
     dbUsers.forEach(async (u: DBUser) => {
         if (u.lastMessageTimestamp !== null) {
             console.log(u.lastMessageTimestamp + " / " + uploadThreshold.getTime())
-            if (u.lastMessageTimestamp < uploadThreshold.getTime()) {
-                let member = c.guilds.cache.get(config.guild).members.cache.get(u.id);
-                // degrade
+            let member = c.guilds.cache.get(config.guild).members.cache.get(u.id);
 
-                console.log(`Degrading user ${u.id}`)
-                if ((u.level > 1) && (u.level < 6)) {
-                    // heavy degredation
-                    removeXP(member, 500)
-                }
-                if (u.level > 6) {
-                    // light :)
-                    removeXP(member, 100)
-
-                }
-            } else {
-                // ignore
-                console.log(`Not degrading user ${u.id}`)
+            if (u.level >= 6 && u.lastMessageTimestamp < premiumUploadThreshold.getTime()) {
+                console.log(`Degrading user ${u.id} [Premium]`);
+                removeXP(member, 200);
+                return;
             }
+
+            if (u.level >= 1 && u.level <= 5 && u.lastMessageTimestamp < uploadThreshold.getTime()) {
+                console.log(`Degrading user ${u.id}`);
+                removeXP(member, 200);
+            } else {
+                console.log(`Not degrading user ${u.id}`);
+            }
+
         }
     })
 }
@@ -215,7 +217,7 @@ async function initBot(c: Client) {
     rename(join(__dirname, "commands", `${config.legacy_point_name.replaceAll(" ", "_")}s${desiredExt}`), join(__dirname, "commands", `${config.point_name(true, false)}s${desiredExt}`), async () => {
         TemporaryFile.init();
         // create spam notif prev file
-        setInterval(async () => { await degredation(c) }, degradeMs)
+        setInterval(async () => { await degredation(c) }, degradeCheckInterval)
         setInterval(async () => { await checkFlaggedUsers() }, 10e3)
         await loadEvents(c);
         await loadCommands(c);
@@ -223,12 +225,12 @@ async function initBot(c: Client) {
 
     let honeypotChannel = client.guilds.cache.get(config.guild).channels.cache.get(config.channels.honeypot) as TextChannel;
     let honeypotMessages = await honeypotChannel.messages.fetch();
-    if(!honeypotMessages.find(m => m.author.id === client.user.id)) {
+    if (!honeypotMessages.find(m => m.author.id === client.user.id)) {
         let honeypotContainer = new TMComponentBuilder();
         honeypotContainer.setAccentColor(0xF8B929);
         honeypotContainer.addTextDisplay(`## 🍯 Do not send messages in this channel\nThis channel is a honeypot designed to catch scammers and spam bots.\n\nIf you send a message here, it will result in a temporary timeout for your account, and you may be considered a bot and banned.`);
 
-        honeypotChannel.send({flags: [MessageFlags.IsComponentsV2], components: [honeypotContainer.buildContainer()]});
+        honeypotChannel.send({ flags: [MessageFlags.IsComponentsV2], components: [honeypotContainer.buildContainer()] });
     }
     // if (filteredCmds.length > 0) {
     // console.log(`Starting Twitch cmd check interval`)
@@ -535,7 +537,8 @@ client.on(Events.ClientReady, async c => {
     await c.application.commands.fetch();
     startCon.addTextDisplay(`-# <t:${Math.floor(Date.now() / 1000)}:F>\n## Bot is Starting...\n> \`Env\` | ${dev_mode ? "DEVELOPMENT" : "PRODUCTION"}\n> \`Hostname\` | ${os.hostname}\n> \`Polls Integration?\` | ${config.polls_enabled ? "Yes" : "No"}\n> \`Commands\` ${c.application.commands.cache.size}\n${c.application.commands.cache.map(cc => `${cc.name}`).join(", ")}`)
     labs.send({ components: [startCon.buildContainer()], flags: [MessageFlags.IsComponentsV2] })
-    console.log(`[${dev_mode ? "DEVELOPMENT" : "PRODUCTION"}] Client logged in as ${c.user.username}`)
+    let osname = os.platform().toLowerCase() !== "win32" ? ((await execSync(`cat /etc/os-release | grep "^NAME=\".*\"" | sed 's/NAME="//' | sed 's/"//'`).toString()) || os.release()) : os.release();
+    console.log(`[${os.userInfo({encoding: "utf8"}).username}@${os.hostname()} ${dev_mode ? "DEVELOPMENT" : "PRODUCTION"}] Client logged in as ${c.user.username} on ${osname}`)
 })
 
 export function logContainer(heading: string, content: string, level: "DEFAULT" | "SUCCESS" | "DANGER" = "DEFAULT"): TMComponentBuilder {
@@ -990,9 +993,9 @@ export async function logEvent(event: Events | string, args: { [key: string]: an
             let member: GuildMember = args["member"];
             let message: Message = args["message"];
 
-            logChannel.send({flags: [MessageFlags.IsComponentsV2], components: [logContainer(`Honeypot Caught Member`, `${userMention(member.id)} (${member.id}) sent a message in ${channelMention(config.channels.honeypot)}\n\nThey were timed out for 24 hours\n### Message Content\n\`\`\`${message.content || "Empty"}\`\`\``).buildContainer()]})
+            logChannel.send({ flags: [MessageFlags.IsComponentsV2], components: [logContainer(`Honeypot Caught Member`, `${userMention(member.id)} (${member.id}) sent a message in ${channelMention(config.channels.honeypot)}\n\nThey were timed out for 24 hours\n### Message Content\n\`\`\`${message.content || "Empty"}\`\`\``).buildContainer()] })
 
-            if(message.deletable) await message.delete();
+            if (message.deletable) await message.delete();
 
             break;
         }
@@ -1057,7 +1060,7 @@ client.on(Events.AutoModerationRuleDelete, async (rule) => { await logEvent(Even
 client.on(Events.AutoModerationActionExecution, async (execution) => { await logEvent(Events.AutoModerationActionExecution, { execution }) })
 client.on(Events.MessageUpdate, async (old_message, new_message) => { await logEvent(Events.MessageUpdate, { old_message, new_message }) })
 client.on(Events.GuildDelete, async (guild) => { await logEvent(Events.GuildDelete, { guild }) })
-client.on("honeypotCatch", async (member, message) => {await logEvent("honeypotCatch", {member, message})})
+client.on("honeypotCatch", async (member, message) => { await logEvent("honeypotCatch", { member, message }) })
 
 client.login(process.env.TOKEN)
 twitchWs.start()

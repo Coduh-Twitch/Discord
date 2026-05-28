@@ -61,6 +61,7 @@ export default {
         if(image) introChannel.send({files: [image.attachment]})
         dbUser.set("shownWelcomeMessage", true)
         dbUser.set("lastMessageTimestamp", Date.now())
+        
         try {
             dbUser.save()
         } catch(e) {

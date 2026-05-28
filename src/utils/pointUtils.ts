@@ -45,7 +45,7 @@ export const addPoints = async (member: GuildMember, content: string): Promise<D
     try {
         dbUser.set("points", new_points);
         let doc: DBUser = await dbUser.save();
-        console.log(`Added ${points_to_give} Point(s) to user ${member.id} (new pts: ${doc.points})`)
+        console.log(`Added ${points_to_give} Point(s) to user ${member.id} (new pts: ${doc.points.toLocaleString()})`)
         return doc;
     } catch (e) {
         console.log(`Failed to add points to user ${member.id}`, e)
