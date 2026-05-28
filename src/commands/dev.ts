@@ -1,8 +1,10 @@
-import { ActionRowBuilder, ApplicationCommandOptionType, ButtonBuilder, ButtonInteraction, ButtonStyle, channelMention, ChannelType, ComponentType, formatEmoji, MessageFlags, parseEmoji, PermissionFlagsBits, roleMention, SeparatorSpacingSize, TextChannel, userMention } from "discord.js";
+import { ActionRowBuilder, ApplicationCommandOptionType, ButtonBuilder, ButtonInteraction, ButtonStyle, channelMention, ChannelType, Colors, ComponentType, formatEmoji, MessageFlags, parseEmoji, PermissionFlagsBits, roleMention, SeparatorSpacingSize, TextChannel, userMention } from "discord.js";
 import { Command, CommandCategory, UserLevel } from "../classes/Command"
 import { TMComponentBuilder } from "../classes/ComponentBuilder"
 import config from "../config"
 import { dev_mode } from "..";
+import { userModel } from "../models/user";
+import os from "node:os"
 
 const DevCommand: Command = {
     enabled: true,
@@ -14,6 +16,12 @@ const DevCommand: Command = {
         {
             name: "read-config",
             description: "Display config values for verification",
+            type: ApplicationCommandOptionType.Subcommand,
+            requiredRole: UserLevel.DEV,
+        },
+        {
+            name: "reset-users",
+            description: "Reset all user DB values to defaults (DANGEROUS)",
             type: ApplicationCommandOptionType.Subcommand,
             requiredRole: UserLevel.DEV,
         },
@@ -48,6 +56,44 @@ const DevCommand: Command = {
     run: async (interaction) => {
         let subcommand = interaction.options.getSubcommand(true);
         let res = await interaction.deferReply({ flags: [MessageFlags.Ephemeral], withResponse: true });
+
+        if (subcommand === "reset-users") {
+            if(os.hostname() !== "ducky") return interaction.editReply({content: `You can't do that in the current environment`})
+            let expirationTime = 60e3;
+            let expirationDate = Date.now() + expirationTime;
+            let expirationTimestamp = Math.floor(expirationDate / 1000);
+
+            let pass = true;
+            if (!pass) return;
+
+            let sendButton = TMComponentBuilder.accessoryButton(ButtonStyle.Danger, `Reset`, null, null, { action: "reset", interactionId: interaction.id })
+
+            let container = new TMComponentBuilder();
+            container.addTextDisplay(`## Reset All DB Users?`);
+            container.addTextDisplay(`This is a dangerous action. Dismiss this interaction to cancel. - Interaction expires <t:${expirationTimestamp}:R>`);
+            
+            let actionRow = new ActionRowBuilder<ButtonBuilder>();
+            actionRow.setComponents([sendButton]);
+            interaction.editReply({ components: [container.buildContainer(), actionRow], flags: [MessageFlags.IsComponentsV2] })
+
+            let int: ButtonInteraction | null;
+            int = await res.resource.message.awaitMessageComponent({componentType: ComponentType.Button, filter: i => i.customId.includes("reset"), time: expirationTime}).catch(e => int = null);
+
+            if(!int) {
+                interaction.editReply({components: [new TMComponentBuilder().addTextDisplay(`The interaction has expired.`).buildContainer()]})
+            } else if(int.customId.includes("reset")) {
+                await int.deferUpdate();
+                let users = await userModel.find();
+
+                for(const user of users) {
+                    let movies = user.favorite_movies;
+                    if(movies.includes("564638")) {movies = ["564638"];} else {movies = []}
+                    await user.updateOne({points: 0, xp: 0, level: 0, shownWelcomeMessage: true, messages: 0, favorite_movies: movies}).exec();
+                }
+
+                await interaction.editReply({components: [new TMComponentBuilder().setAccentColor(Colors.Green).addTextDisplay(`Reset ${users.length.toLocaleString()} users(s)`).buildContainer()]})
+            }
+        }
 
         if (subcommand === "role-react") {
             let expirationTime = 60e3;
