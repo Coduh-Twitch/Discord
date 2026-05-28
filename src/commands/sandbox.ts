@@ -13,6 +13,7 @@ import config from "../config"
 import { calculateGivenXP, calculateRequiredXP } from "../utils/xpUtils"
 import { appendFileSync, createReadStream, ensureFileSync } from "fs-extra";
 import { get } from "axios";
+import os from "node:os"
 
 
 let voiceConnection: VoiceConnection | null = null;
@@ -36,7 +37,7 @@ function randomString(max: number = 100): string {
 
 
 const SandboxCommand: Command = {
-    enabled: !dev_mode,
+    enabled: os.hostname() === "ducky",
     category: CommandCategory.DEV,
     requiredRole: UserLevel.DEV,
     defaultMemberPermissions: [PermissionFlagsBits.Administrator],

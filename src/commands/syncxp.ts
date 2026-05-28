@@ -35,7 +35,7 @@ export async function getMee6Leaderboard(guildId: string | null = null): Promise
 }
 
 const SyncXpCommand: Command = {
-    enabled: true,
+    enabled: false,
     category: CommandCategory.DEV,
     requiredRole: UserLevel.DEV,
     name: 'syncxp',
