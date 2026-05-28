@@ -1,5 +1,8 @@
 node_modules
 .env
 src/twitchCommandHash.txt
+src/streamTimestamp.txt
+src/streamNotificationId.txt
+src/streamData.json
 dist
 dist/src
