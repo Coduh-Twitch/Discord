@@ -7,3 +7,4 @@ src/streamData.json
 dist
 dist/src
 credits.json
+temp/*

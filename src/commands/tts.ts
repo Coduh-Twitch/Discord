@@ -1,4 +1,4 @@
-import { ApplicationCommandOptionType, AttachmentBuilder, blockQuote, ChatInputCommandInteraction, cleanContent, Colors, Events, MessageFlags, PermissionFlagsBits, TextBasedChannel, User, userMention, VoiceBasedChannel } from "discord.js";
+import { ApplicationCommandOptionType, AttachmentBuilder, blockQuote, channelMention, ChatInputCommandInteraction, cleanContent, Colors, Events, MessageFlags, PermissionFlagsBits, TextBasedChannel, User, userMention, VoiceBasedChannel } from "discord.js";
 import { Command, CommandCategory, UserLevel } from "../classes/Command";
 import { Canvas, CanvasGradient, CanvasRenderingContext2D, createCanvas, Image } from "canvas";
 import { TMComponentBuilder } from "../classes/ComponentBuilder";
@@ -7,12 +7,19 @@ import { AudioPlayer, AudioPlayerStatus, createAudioPlayer, createAudioResource,
 import { EdgeTTS } from "node-edge-tts";
 import { join } from "path";
 import { readFileSync } from "fs";
-import { player } from "..";
+import { client, player } from "..";
+import { appEmoji } from "../utils/emojiUtils";
+
+enum Voice {
+    MALE = "en-US-ChristopherNeural",
+    FEMALE = "en-US-AriaNeural"
+}
 
 interface Utterance {
     id: string;
     user: string;
     content: string;
+    voice: Voice;
 }
 
 let voiceConnection: VoiceConnection | null = null;
@@ -27,6 +34,31 @@ function utterPath(id: string) {
     return join(process.cwd(), "temp", `utterance_${id}.webm`);
 }
 
+async function say(interaction: ChatInputCommandInteraction, utterance: Utterance): Promise<void> {
+    try {
+        let user = await client.users.fetch(utterance.user);
+        let utterancePath = utterPath(utterance.id);
+
+        const tts = new EdgeTTS({
+            voice: utterance?.voice || "en-US-AriaNeural",
+            lang: "en-US",
+            outputFormat: "webm-24khz-16bit-mono-opus",
+        })
+        
+        return await tts.ttsPromise(voiceHost && voiceHost.id !== user.id ? `${user.username} said: ${utterance.content}` : utterance.content, utterancePath).then(v => {
+            let res = createAudioResource(utterancePath, { inputType: StreamType.WebmOpus, inlineVolume: true });
+            if (res.volume) res.volume.setVolume(1);
+            player.play(res);
+            player.unpause();
+            interaction.editReply({ content: `Trying to say \`${utterance.content}\`` })
+            interaction.channel.send({ content: `### TTS from ${userMention(interaction.user.id)}\n-# <t:${Math.floor(Date.now() / 1000)}:R>\n${blockQuote(utterance.content)}` })
+        })
+    } catch (e) {
+        console.log(e);
+        interaction.editReply({ content: `Failed to say \`${utterance?.content}\`${e?.message ? `. Error: ${e.message}` : ""}` })
+        return;
+    }
+}
 
 const TTSCommand: Command = {
     enabled: true,
@@ -83,22 +115,6 @@ const TTSCommand: Command = {
 
         let subcommand = interaction.options.getSubcommand(true);
 
-        // (await interaction.channel.messages.fetch(content)).poll.end()
-        const tts = new EdgeTTS({
-            voice: interaction.options.getString("voice", false) || "en-US-AriaNeural",
-            lang: "en-US",
-            outputFormat: "webm-24khz-16bit-mono-opus",
-        })
-
-        // let image = await memberWelcomeImage(m);
-        // if(image) {
-        //     interaction.editReply({files: [image.attachment]})
-        // }
-
-        // if(voiceHost !== null && interaction.user.id !== voiceHost.id) {
-        //     interaction.reply({flags: [MessageFlags.Ephemeral], content: `${userMention(voiceHost.id)} is currently `})
-        //     return;
-        // }
 
         if (subcommand === "stop") {
             if (!m.permissions.has(PermissionFlagsBits.ModerateMembers, true)) return interaction.editReply({ content: `Only Moderators can do this.` });
@@ -172,6 +188,7 @@ const TTSCommand: Command = {
                 if (joinedChannel && joinedChannel.isSendable()) joinedChannel.send({ flags: [MessageFlags.IsComponentsV2], components: [sessionEnd.buildContainer()] })
                 interaction.editReply({ content: `👍` })
                 joinedChannel = null;
+                utteranceQueue = [];
                 return;
             } else return interaction.editReply({ content: `There is no TTS session in your current voice channel` })
         }
@@ -179,10 +196,12 @@ const TTSCommand: Command = {
         if (subcommand === "say") {
             let content = interaction.options.getString('content', true);
             content = cleanContent(content, interaction.channel);
+            let member = interaction.guild.members.cache.get(interaction.user.id);
+            if(!member.voice || member.voice.channelId !== joinedChannel.id) return interaction.editReply({ content: `You must be in the session VC to use this: ${channelMention(joinedChannel.id)}` })
             if (!voiceConnection) return interaction.editReply({ content: `There is no TTS session in your current voice channel. Start one with </tts join:${interaction.commandId}>` })
             if (content.length > 1500) return interaction.editReply({ content: `TTS is too long (${content.length.toLocaleString()}/1,500)` })
             if (player.state.status === AudioPlayerStatus.Playing || player.state.status === AudioPlayerStatus.Buffering) {
-                let qp: Utterance = { user: interaction.user.id, content: content, id: crypto.randomUUID() };
+                let qp: Utterance = { user: interaction.user.id, content: content, id: crypto.randomUUID(), voice: interaction.options.getString("voice", false) as Voice || Voice.FEMALE };
                 utteranceQueue.push(qp);
                 utteranceIds.set(content, qp.id);
 
@@ -190,19 +209,8 @@ const TTSCommand: Command = {
                 // return interaction.editReply({ content: `A TTS is already playing.\nRun this command again:\n\`\`\`/tts say content:${content}\`\`\`` })
             }
             if (voiceConnection && content) {
-                let utteranceId = crypto.randomUUID();
-                let utterancePath = utterPath(utteranceId);
-                tts.ttsPromise(voiceHost && voiceHost.id !== interaction.user.id ? `${interaction.user.username} said: ${content}` : content, utterancePath).then(v => {
-                    let res = createAudioResource(utterancePath, { inputType: StreamType.WebmOpus, inlineVolume: true });
-                    if (res.volume) res.volume.setVolume(1);
-                    player.play(res);
-                    player.unpause();
-                    interaction.editReply({ content: `Trying to say \`${content}\`` })
-                    interaction.channel.send({ content: `### TTS from ${userMention(interaction.user.id)}\n-# <t:${Math.floor(Date.now() / 1000)}:R>\n${blockQuote(content)}` })
-                }).catch(e => {
-                    console.log(e);
-                    interaction.editReply({ content: `Failed to say \`${content}\`${e?.message ? `. Error: ${e.message}` : ""}` })
-                })
+                let qp: Utterance = { user: interaction.user.id, content: content, id: crypto.randomUUID(), voice: interaction.options.getString("voice", false) as Voice || Voice.FEMALE };
+                await say(interaction, qp);
 
             }
         }
@@ -214,28 +222,16 @@ const TTSCommand: Command = {
             if (oldState.status === AudioPlayerStatus.Playing && newState.status !== AudioPlayerStatus.Playing) {
                 if (utteranceQueue[currentQueueItem]) {
                     let queueItem = utteranceQueue[currentQueueItem]
-                    console.log("utterance found", queueItem.content)
-                    let content = queueItem.content;
-                    let utteranceId = utteranceIds.get(content);
-                    let utterancePath = utterPath(utteranceId);
-                    let user = await interaction.client.users.fetch(queueItem.user);
-                    tts.ttsPromise((voiceHost && (voiceHost.id !== queueItem.user)) ? `${user.username} said: ${content}` : content, utterancePath).then(v => {
-                        let res = createAudioResource(utterancePath, { inputType: StreamType.WebmOpus, inlineVolume: true });
-                        if (res.volume) res.volume.setVolume(1);
-                        player.play(res);
-                        player.unpause();
-                        // interaction.editReply({ content: `Trying to say \`${content}\`` })
-                        interaction.channel.send({ content: `### TTS from ${userMention(queueItem.user)}\n-# <t:${Math.floor(Date.now() / 1000)}:R>\n${blockQuote(content)}` })
-                    }).catch(e => {
-                        console.log(e);
-                        interaction.editReply({ content: `Failed to say \`${content}\`${e?.message ? `. Error: ${e.message}` : ""}` })
-                    })
+                    await say(interaction, queueItem);
+
 
                     currentQueueItem += 1;
                     utteranceQueue.shift();
                     if (!utteranceQueue[currentQueueItem]) {
-                    console.log("next utterance not found, resetting to 0")
+                        console.log("next utterance not found, resetting to 0")
                         currentQueueItem = 0;
+                        let member = interaction.guild.members.cache.get(interaction.user.id);
+                        member.voice.channel.send({content: `${await appEmoji(interaction.client, "yay")} The TTS Queue is Now Empty`})
                     }
                 } else {
                     console.log("utterance not found")
