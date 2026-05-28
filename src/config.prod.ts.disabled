@@ -18,7 +18,7 @@ const config = {
         hangout: dev_mode ? labsChannelId : "834901822988615732",
         rules: dev_mode ? labsChannelId : "834901822757666822",
         streams: dev_mode ? labsChannelId : "981083290314371103",
-        logs: dev_mode ? labsChannelId : "1504011572459343903",
+        logs: dev_mode ? labsChannelId : "1509683575883174039",
         labs: labsChannelId,
         joins: "834901822757666821",
         jackbox: "1490272878107820103",
