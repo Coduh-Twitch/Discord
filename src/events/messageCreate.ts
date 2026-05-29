@@ -79,7 +79,7 @@ export default {
 
             await newUser.save();
             await message.react(config.emojis.points);
-        } else if(!dbUser.freebie) {
+        } else if(dbUser && !dbUser.freebie) {
             dbUser.set("freebie", true);
             dbUser.set("points", (dbUser.points || 0) + 1000);
 

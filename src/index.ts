@@ -535,7 +535,7 @@ async function initBot(c: Client) {
 
 
         }
-    }, 1e3);
+    }, 2e3);
 }
 
 client.on(Events.ClientReady, async c => {
