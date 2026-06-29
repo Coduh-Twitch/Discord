@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "nodemon --exec ts-node src/index.ts -dev"
+    "test": "nodemon --exec ts-node src/index.ts -dev",
+    "db:push": "drizzle-kit push"
   },
   "keywords": [],
   "author": "",
@@ -12,6 +13,7 @@
   "dependencies": {
     "@discordjs/opus": "^0.10.0",
     "@discordjs/voice": "^0.19.2",
+    "@napi-rs/canvas": "^1.0.1",
     "@snazzah/davey": "^0.1.11",
     "@twurple/api": "^7.4.0",
     "@twurple/auth": "^7.4.0",
@@ -21,11 +23,14 @@
     "@types/fs-extra": "^11.0.4",
     "@types/node": "^24.5.2",
     "axios": "^1.14.0",
+    "better-sqlite3": "^12.11.1",
     "canvas": "^3.2.3",
     "diff": "^8.0.4",
     "diff-match-patch": "^1.0.5",
     "discord.js": "^14.26.4",
     "dotenv": "^17.2.2",
+    "drizzle-kit": "^0.31.10",
+    "drizzle-orm": "^0.45.2",
     "fast-average-color-node": "^3.1.0",
     "fs-extra": "^11.3.2",
     "mongoose": "^8.18.2",
