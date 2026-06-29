@@ -15,6 +15,7 @@ const config = {
         return spaces ? s.replaceAll("_", " ") : s.replaceAll(" ", "_");
     },
     channels: {
+        daily_questions: "1520901469941923880",
         hangout: dev_mode ? labsChannelId : "834901822988615732",
         rules: dev_mode ? labsChannelId : "834901822757666822",
         streams: dev_mode ? labsChannelId : "981083290314371103",
@@ -37,6 +38,7 @@ const config = {
         points: "🪙"
     },
     roles: {
+        daily_questions: "1521099790841151636",
         members: dev_mode ? "1489808915129696256" : "1485414294978953326",
         movie_nights: dev_mode ? "1489939664679735386" : "1504011286206353468",
         levels: {
