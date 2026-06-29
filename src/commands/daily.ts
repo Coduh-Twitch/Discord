@@ -141,6 +141,7 @@ async function updatePollMessage(
     if (!dev_mode) {
       midnight.setDate(midnight.getDate() + 1);
       midnight.setHours(0, 0, 0, 0);
+      midnight.setHours(midnight.getHours() + 4);
     } else {
       midnight = new Date(Date.now() + 60e3);
     }
@@ -614,6 +615,7 @@ async function sendDailyQuestion(
     if (!dev_mode) {
       midnight.setDate(midnight.getDate() + 1);
       midnight.setHours(0, 0, 0, 0);
+      midnight.setHours(midnight.getHours() + 4);
     } else {
       midnight = new Date(Date.now() + 60e3);
     }
