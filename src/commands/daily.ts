@@ -48,13 +48,13 @@ import { answers, questions } from "../db/schema";
 import { MySqlColumnBuilderWithAutoIncrement } from "drizzle-orm/mysql-core";
 import { wouldYouRatherImage } from "../utils/canvasUtils";
 
-enum QuestionModes {
+export enum QuestionModes {
   WOULD_YOU_RATHER = "wyw",
   CLASSIC = "poll",
   DISCUSSION = "discussion",
 }
 
-const modes = [
+export const modes = [
   {
     name: "🟥 Would You Rather 🟦",
     value: "wyw",
@@ -244,6 +244,23 @@ async function updatePollMessage(
             pollContainer.addTextDisplay("### Vote Below");
             pollContainer.addButtonActionRow(buttons);
             if (buttons2.length > 0) pollContainer.addButtonActionRow(buttons2);
+            pollContainer.addSeparator(SeparatorSpacingSize.Small, false);
+            pollContainer.addButtonActionRow([
+              TMComponentBuilder.accessoryButton(
+                ButtonStyle.Secondary,
+                "View Voters",
+                null,
+                { id: (await appEmoji(client, "pausej")).id },
+                parseCustomId(
+                  createCustomId({
+                    interactionId: "dailyquestion",
+                    action: `${questionId}`,
+                    command: "voters",
+                    subcommand: `mode-${mode.toString()}`,
+                  }),
+                ),
+              ),
+            ]);
           }
 
           pollContainer.addSeparator();
@@ -543,6 +560,23 @@ async function updatePollMessage(
             );
           }
           wywContainer.addButtonActionRow(buttons);
+          wywContainer.addSeparator(SeparatorSpacingSize.Small, false);
+          wywContainer.addButtonActionRow([
+            TMComponentBuilder.accessoryButton(
+              ButtonStyle.Secondary,
+              "View Voters",
+              null,
+              { id: (await appEmoji(client, "pausej")).id },
+              parseCustomId(
+                createCustomId({
+                  interactionId: "dailyquestion",
+                  action: `${questionId}`,
+                  command: "voters",
+                  subcommand: `mode-${mode.toString()}`,
+                }),
+              ),
+            ),
+          ]);
           wywContainer.addSeparator();
         }
         wywContainer.addTextDisplay(

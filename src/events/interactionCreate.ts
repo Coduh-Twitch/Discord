@@ -2,6 +2,7 @@ import {
   ApplicationCommandOptionType,
   AutocompleteInteraction,
   BaseInteraction,
+  blockQuote,
   ButtonInteraction,
   ChatInputCommandInteraction,
   codeBlock,
@@ -9,6 +10,7 @@ import {
   MessageFlags,
   PermissionFlagsBits,
   roleMention,
+  userMention,
 } from "discord.js";
 import { join } from "path";
 import { desiredExt, dev_mode } from "..";
@@ -20,7 +22,14 @@ import { TMComponentBuilder } from "../classes/ComponentBuilder";
 import { parseCustomId } from "../utils/customIdUtils";
 import { appEmoji } from "../utils/emojiUtils";
 import { Command, UserLevel } from "../classes/Command";
-import { addVoter, getAllVoters, getDailyQuestion } from "../db/guilds";
+import {
+  addVoter,
+  getAllVoters,
+  getDailyQuestion,
+  getDbGuild,
+} from "../db/guilds";
+import { voters } from "../db/schema";
+import { modes, QuestionModes } from "../commands/daily";
 
 let roleReactors: Map<string, string> = new Map<string, string>();
 let roleReactCooldown = 3e3;
@@ -148,6 +157,65 @@ export default {
     async function handleButtonPress(interaction: ButtonInteraction) {
       let parsedId = parseCustomId(interaction.customId);
       if (parsedId.interactionId === "dailyquestion") {
+        if (parsedId.command === "voters") {
+          await interaction.deferReply({ flags: [MessageFlags.Ephemeral] });
+
+          let dbQuestion = getDailyQuestion(interaction.guildId);
+          let dbGuild = getDbGuild(interaction.guildId);
+          let dbVoters = getAllVoters(dbQuestion.question.id);
+          let voterOptions: {
+            [answerIndex: string]: (typeof voters.$inferInsert)[];
+          } = {};
+
+          let modeSplit = parsedId.subcommand.split("-")[1];
+          let mode = modeSplit as QuestionModes;
+          let modeReadable = modes.find((m) => m.value === modeSplit).name;
+
+          for (const voter of dbVoters) {
+            let answer = dbQuestion.answers.find(
+              (a) => a.index === voter.vote_index,
+            );
+            let answerOption = voterOptions[`${answer.index}`];
+            answerOption = [...(answerOption || []), voter];
+          }
+
+          let votesCont = new TMComponentBuilder().setAccentColor(
+            config.brand_color,
+          );
+
+          votesCont.addHeadingWithSeparator(
+            `Daily Question #${dbGuild.total_daily_questions} | ${modeReadable}\n-# Voter List`,
+            3,
+          );
+
+          dbQuestion.answers = dbQuestion.answers.sort(
+            (a, b) => b.votes - a.votes,
+          );
+
+          if (dbVoters.length > 0) {
+            for (const answer of dbQuestion.answers) {
+              let filteredVoters = dbVoters.filter(
+                (v) => v.vote_index === answer.index,
+              );
+              let isWinning =
+                dbQuestion.answers[0].index === answer.index &&
+                answer.votes !== 0;
+              let isRunnerUp =
+                dbQuestion.answers[1].index === answer.index &&
+                answer.votes !== 0;
+              console.log("VOTERS (FILT)", filteredVoters);
+              votesCont.addTextDisplay(
+                `### \`${isWinning ? "🏆 " : isRunnerUp ? "🥈 " : ""}${answer.votes}\` ${answer.answer_text}\n${filteredVoters.map((v) => `- ${userMention(v.user_id)}`).join("\n")}`,
+              );
+              votesCont.addSeparator();
+            }
+          } else votesCont.addTextDisplay("No votes have been tallied yet.");
+
+          await interaction.editReply({
+            flags: [MessageFlags.IsComponentsV2],
+            components: [votesCont.buildContainer()],
+          });
+        }
         if (parsedId.command === "vote") {
           let split = parsedId.action.split("-")[1];
           let answerIndex: number | null = Number.isNaN(Number(split))
