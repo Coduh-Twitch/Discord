@@ -8,3 +8,5 @@ dist
 dist/src
 credits.json
 temp/*
+*.db
+bot.db
