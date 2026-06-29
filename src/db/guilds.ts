@@ -176,6 +176,8 @@ export const deleteDailyQuestion = async (guildId: string): Promise<void> => {
         dailyQuestion.question.prompt_id,
       );
 
+      decrementDailyQuestionCount(guildId);
+
       if (questionMessage && questionMessage.deletable) {
         questionMessage
           .delete()
@@ -188,7 +190,6 @@ export const deleteDailyQuestion = async (guildId: string): Promise<void> => {
                   setDailyQuestionPromptId(dailyQuestion.question.id, null);
 
                   expireDailyQuestion(guildId);
-                  decrementDailyQuestionCount(guildId);
                 })
                 .catch(() => {
                   // oops
