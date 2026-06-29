@@ -12,6 +12,19 @@ export const getDbGuild = (id: string): typeof guilds.$inferSelect => {
   return guild;
 };
 
+export const updateDbGuild = (
+  id: string,
+  updates: typeof guilds.$inferInsert,
+): typeof guilds.$inferInsert => {
+  id = getDbGuild(id).id;
+  return db
+    .update(guilds)
+    .set(updates)
+    .where(eq(guilds.id, id))
+    .returning()
+    .get();
+};
+
 export const incrementDailyQuestionCount = (
   id: string,
 ): typeof guilds.$inferInsert => {
