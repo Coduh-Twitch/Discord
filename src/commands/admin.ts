@@ -205,6 +205,11 @@ export const AdminCommand: Command = {
             },
           ],
         },
+        {
+          name: "reset-total-questions",
+          description: "Set the total daily question counter back to 0",
+          type: ApplicationCommandOptionType.Subcommand,
+        },
       ],
     },
   ],
@@ -217,6 +222,32 @@ export const AdminCommand: Command = {
         await interaction.deferReply({ flags: [MessageFlags.Ephemeral] });
 
         switch (subcommand) {
+          case "reset-total-questions": {
+            let confirmedCont = new TMComponentBuilder()
+              .setAccentColor(Colors.Green)
+              .addTextDisplay(`Reset total question count`);
+
+            try {
+              updateDbGuild(interaction.guildId, {
+                ...getDbGuild(interaction.guildId),
+                total_daily_questions: 0,
+              });
+
+              await interaction.editReply({
+                flags: [MessageFlags.IsComponentsV2],
+                components: [confirmedCont.buildContainer()],
+              });
+            } catch (e) {
+              let failedCont = new TMComponentBuilder()
+                .setAccentColor(Colors.Red)
+                .addTextDisplay(`Failed to reset daily question count`);
+              await interaction.editReply({
+                flags: [MessageFlags.IsComponentsV2],
+                components: [failedCont.buildContainer()],
+              });
+            }
+            break;
+          }
           case "set-question-channel": {
             let channel = interaction.options.getChannel("channel", true);
             let confirmedCont = new TMComponentBuilder()
