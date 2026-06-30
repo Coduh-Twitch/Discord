@@ -269,7 +269,7 @@ async function updatePollMessage(
 
           pollContainer.addSeparator();
           pollContainer.addTextDisplay(
-            `-# Voting Ends <t:${Math.floor(dbQuestion.question.expires_at / 1000)}:R>! (<t:${Math.floor(dbQuestion.question.expires_at / 1000)}:t>)`,
+            `-# Voting Ends <t:${Math.floor(dbQuestion.question.expires_at / 1000)}:R>! (<t:${Math.floor(dbQuestion.question.expires_at / 1000)}:t>) | Toggle the ${roleMention(config.roles.daily_questions)} role via <id:customize>`,
           );
 
           if (questionChannel.isSendable()) {
@@ -474,6 +474,11 @@ async function updatePollMessage(
           ]);
         }
 
+        discussionContainer.addSeparator();
+        discussionContainer.addTextDisplay(
+          `-# Question Expire${dbQuestion.question.active ? "s" : "d"} <t:${Math.floor(dbQuestion.question.expires_at / 1000)}:R>! (<t:${Math.floor(dbQuestion.question.expires_at / 1000)}:t>) | Toggle the **Daily Questions** role via <id:customize>`,
+        );
+
         if (questionChannel.isSendable()) {
           if (questionMessage && questionMessage.editable) {
             questionMessage
@@ -580,7 +585,7 @@ async function updatePollMessage(
           wywContainer.addSeparator();
         }
         wywContainer.addTextDisplay(
-          `-# Voting End${dbQuestion.question.active ? "s" : "ed"} <t:${Math.floor(dbQuestion.question.expires_at / 1000)}:R>! (<t:${Math.floor(dbQuestion.question.expires_at / 1000)}:t>)`,
+          `-# Voting End${dbQuestion.question.active ? "s" : "ed"} <t:${Math.floor(dbQuestion.question.expires_at / 1000)}:R>! (<t:${Math.floor(dbQuestion.question.expires_at / 1000)}:t>) | Toggle the ${roleMention(config.roles.daily_questions)} role via <id:customize>`,
         );
 
         if (questionChannel.isSendable()) {
