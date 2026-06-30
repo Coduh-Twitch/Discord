@@ -524,6 +524,7 @@ async function updatePollMessage(
         const image = await wouldYouRatherImage(
           dbGuild.total_daily_questions,
           dbAnswers,
+          !dbQuestion.question.active,
         );
 
         const wywContainer = new TMComponentBuilder();

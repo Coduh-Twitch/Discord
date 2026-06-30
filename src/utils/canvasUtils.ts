@@ -225,6 +225,7 @@ function lightenHex(hex: string, percent: number) {
 export function wouldYouRatherImage(
   questionNumber: number,
   options: (typeof answers.$inferInsert)[],
+  final: boolean = false,
 ): Promise<{ attachment: AttachmentBuilder; url: string } | null> {
   return new Promise((resolve) => {
     const canvas: Canvas = createCanvas(1920, 1080);
@@ -422,26 +423,26 @@ export function wouldYouRatherImage(
 
     // Left
     ctx.fillText(
-      `${(options[0].votes || 0) > options[1].votes ? "🏆 " : ""}${options[0]?.votes.toLocaleString() || 0}`,
+      `${(options[0].votes || 0) > options[1].votes ? `${final ? "🏆 " : "▲ "}` : ""}${options[0]?.votes.toLocaleString() || 0}`,
       w / 2 - w / 2 / 2,
       h / 2 - votesYOffset,
     );
 
     ctx.strokeText(
-      `${(options[0].votes || 0) > options[1].votes ? "🏆 " : ""}${options[0]?.votes.toLocaleString() || 0}`,
+      `${(options[0].votes || 0) > options[1].votes ? `${final ? "🏆 " : "▲ "}` : ""}${options[0]?.votes.toLocaleString() || 0}`,
       w / 2 - w / 2 / 2,
       h / 2 - votesYOffset,
     );
 
     // Right
     ctx.fillText(
-      `${(options[0].votes || 0) < options[1].votes ? "🏆 " : ""}${options[1]?.votes.toLocaleString() || 0}`,
+      `${(options[0].votes || 0) < options[1].votes ? `${final ? "🏆 " : "▲ "}` : ""}${options[1]?.votes.toLocaleString() || 0}`,
       w / 2 + w / 4,
       h / 2 - votesYOffset,
     );
 
     ctx.strokeText(
-      `${(options[0].votes || 0) < options[1].votes ? "🏆 " : ""}${options[1]?.votes.toLocaleString() || 0}`,
+      `${(options[0].votes || 0) < options[1].votes ? `${final ? "🏆 " : "▲ "}` : ""}${options[1]?.votes.toLocaleString() || 0}`,
       w / 2 + w / 4,
       h / 2 - votesYOffset,
     );
