@@ -62,7 +62,7 @@ async function buildReminderContainer(
   );
   container.addSeparator();
   container.addTextDisplay(
-    `${codeBlock(reminder.content)}\n-# Sent every ${reminder.interval_weekday ? `${weekdays.find((w) => w.value === `${reminder.interval_weekday}`).name} at <t:${reminder.next_send_timestamp}:t>` : `${reminder.interval_months ? `${reminder.interval_months} Month${reminder.interval_months === 1 ? " " : "s "}` : ""}${reminder.interval_days ? `${reminder.interval_days} Day${reminder.interval_days === 1 ? " " : "s "}` : ""}${reminder.interval_hours ? `${reminder.interval_hours} Hour${reminder.interval_hours === 1 ? " " : "s "}` : ""}${reminder.interval_minutes ? `${reminder.interval_minutes} Minute${reminder.interval_minutes === 1 ? " " : "s"}` : ""}`}`,
+    `${codeBlock(reminder.content)}\n-# Sent every ${reminder.interval_weekday ? `${weekdays.find((w) => w.value === `${reminder.interval_weekday}`).name} at <t:${Math.floor(reminder.next_send_timestamp / 1000)}:t>` : `${reminder.interval_months ? `${reminder.interval_months} Month${reminder.interval_months === 1 ? " " : "s "}` : ""}${reminder.interval_days ? `${reminder.interval_days} Day${reminder.interval_days === 1 ? " " : "s "}` : ""}${reminder.interval_hours ? `${reminder.interval_hours} Hour${reminder.interval_hours === 1 ? " " : "s "}` : ""}${reminder.interval_minutes ? `${reminder.interval_minutes} Minute${reminder.interval_minutes === 1 ? " " : "s"}` : ""}`}`,
   );
 
   container.addSeparator();
@@ -469,6 +469,7 @@ const ReminderCommand: Command = {
               newReminder,
               start_timestamp ? start_timestamp * 1000 : 0,
             );
+            newReminder = getDbReminder(newReminder.id);
             let reminderChannel = interaction.guild.channels.cache.get(
               config.channels.reminders,
             ) as TextChannel;

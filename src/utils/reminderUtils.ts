@@ -1,7 +1,7 @@
 import { and, eq } from "drizzle-orm";
 import { db } from "../db";
 import { reminder_dm_users, reminders } from "../db/schema";
-import { client } from "..";
+import { client, dev_mode } from "..";
 
 export const createReminder = (
   data: typeof reminders.$inferInsert,
@@ -167,14 +167,19 @@ export const nextReminderTimestamp = (
   const date = new Date();
 
   if ((reminder?.interval_weekday || 0) > 0) {
-    const weekday = reminder.interval_weekday - 1;
+    const weekday = reminder.interval_weekday!;
     const currentWeekday = date.getDay();
     let daysToAdd = weekday - currentWeekday;
 
     if (daysToAdd <= 0) daysToAdd += 7;
 
     date.setDate(date.getDate() + daysToAdd);
-    date.setHours(0, 0, 0, 0);
+
+    if (dev_mode) {
+      date.setUTCHours(4, 0, 0, 0);
+    } else {
+      date.setHours(0, 0, 0, 0);
+    }
   }
 
   if (reminder.interval_months)
@@ -186,17 +191,22 @@ export const nextReminderTimestamp = (
   if (reminder.interval_minutes)
     date.setMinutes(date.getMinutes() + reminder.interval_minutes);
 
+  const finalTimestamp = override_timestamp
+    ? override_timestamp
+    : date.getTime();
+
   if (reminder.id) {
-    let dbReminder = getDbReminder(reminder.id);
-    let time = override_timestamp !== 0 ? override_timestamp : date.getTime();
-    if (dbReminder)
+    const dbReminder = getDbReminder(reminder.id);
+    if (dbReminder) {
       db.update(reminders)
-        .set({ next_send_timestamp: time })
+        .set({ next_send_timestamp: finalTimestamp })
         .where(eq(reminders.id, dbReminder.id))
         .returning()
         .get();
+    }
   }
-  return date.getTime();
+
+  return finalTimestamp;
 };
 
 export const subscribeUser = async (
