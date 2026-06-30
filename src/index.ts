@@ -87,7 +87,14 @@ import {
 import { DBRaffleParticipant, raffleModel } from "./models/raffle";
 import { appEmoji } from "./utils/emojiUtils";
 import { execSync } from "child_process";
-import { expireDailyQuestion, getDailyQuestion } from "./db/guilds";
+import {
+  expireDailyQuestion,
+  getAllVoters,
+  getDailyQuestion,
+  getDbGuild,
+} from "./db/guilds";
+import { initDailyEvents, modes, QuestionModes } from "./commands/daily";
+import { answers, questions, voters } from "./db/schema";
 
 // throw new Error(generateDependencyReport());
 
@@ -1630,6 +1637,67 @@ export async function logEvent(
 
       break;
     }
+
+    case "dailyQuestionEnded": {
+      console.log("DAILY QUESTION ENDED");
+      let mode: QuestionModes = args["mode"];
+      let question: typeof questions.$inferInsert = args["question"];
+      let answersArr: (typeof answers.$inferInsert)[] = args["answersArr"];
+
+      let dbGuild = getDbGuild(config.guild);
+      let dbVoters = getAllVoters(question.id);
+      let voterOptions: {
+        [answerIndex: string]: (typeof voters.$inferInsert)[];
+      } = {};
+
+      let modeReadable = modes.find((m) => m.enumValue === mode).name;
+
+      for (const voter of dbVoters) {
+        let answer = answersArr.find((a) => a.index === voter.vote_index);
+        let answerOption = voterOptions[`${answer.index}`];
+        answerOption = [...(answerOption || []), voter];
+      }
+
+      let votesCont = new TMComponentBuilder().setAccentColor(
+        config.brand_color,
+      );
+
+      votesCont.addHeadingWithSeparator(
+        `Daily Question #${dbGuild.total_daily_questions} | ${modeReadable}\n-# Voter List`,
+        3,
+      );
+
+      answersArr = answersArr.sort((a, b) => b.votes - a.votes);
+
+      if (dbVoters.length > 0) {
+        for (const answer of answersArr) {
+          let filteredVoters = dbVoters.filter(
+            (v) => v.vote_index === answer.index,
+          );
+          let isWinning =
+            answersArr[0].index === answer.index && answer.votes !== 0;
+          let isRunnerUp =
+            answersArr[1].index === answer.index && answer.votes !== 0;
+          console.log("VOTERS (FILT)", filteredVoters);
+          votesCont.addTextDisplay(
+            `### \`${isWinning ? "🏆 " : isRunnerUp ? "🥈 " : ""}${answer.votes}\` ${answer.answer_text}\n${(await Promise.all(filteredVoters.map(async (v) => `- ${(await client.users.fetch(v.user_id)).username}`))).join("\n")}`,
+          );
+          votesCont.addSeparator(SeparatorSpacingSize.Small, false);
+        }
+      } else votesCont.addTextDisplay("Nobody Voted.");
+
+      logChannel.send({
+        flags: [MessageFlags.IsComponentsV2],
+        components: [
+          logContainer(
+            `Daily Question #${dbGuild.total_daily_questions} Ended`,
+            "The votes have been tallied below:",
+          ).buildContainer(),
+          votesCont.buildContainer(),
+        ],
+      });
+      break;
+    }
   }
 }
 
@@ -1672,51 +1740,65 @@ process.on("SIGUSR1", exitHandler.bind(null, null, null));
 process.on("SIGUSR2", exitHandler.bind(null, null, null));
 
 // LOGS
+//
+let logsInitialized = false;
+let logsInitInterval;
 
-client.on(Events.ChannelCreate, async (channel) => {
-  await logEvent(Events.ChannelCreate, { channel: channel });
-});
-client.on(Events.ChannelDelete, async (channel) => {
-  if (!channel.isDMBased())
-    await logEvent(Events.ChannelDelete, { channel: channel });
-});
-client.on(Events.ChannelUpdate, async (old_channel, new_channel) => {
-  await logEvent(Events.ChannelUpdate, { old_channel, new_channel });
-});
-// client.on(Events.GuildMemberRemove, (member) => { logEvent(Events.GuildMemberRemove, { member }) })
-client.on(Events.GuildUpdate, async (old_guild, new_guild) => {
-  await logEvent(Events.GuildUpdate, { old_guild, new_guild });
-});
-client.on(Events.GuildRoleCreate, async (role) => {
-  await logEvent(Events.GuildRoleCreate, { role });
-});
-client.on(Events.GuildRoleDelete, async (role) => {
-  await logEvent(Events.GuildRoleDelete, { role });
-});
-client.on(Events.GuildRoleUpdate, async (old_role, new_role) => {
-  await logEvent(Events.GuildRoleUpdate, { old_role, new_role });
-});
-client.on(Events.AutoModerationRuleCreate, async (rule) => {
-  await logEvent(Events.AutoModerationRuleCreate, { rule });
-});
-client.on(Events.AutoModerationRuleUpdate, async (old_rule, new_rule) => {
-  await logEvent(Events.AutoModerationRuleUpdate, { old_rule, new_rule });
-});
-client.on(Events.AutoModerationRuleDelete, async (rule) => {
-  await logEvent(Events.AutoModerationRuleDelete, { rule });
-});
-client.on(Events.AutoModerationActionExecution, async (execution) => {
-  await logEvent(Events.AutoModerationActionExecution, { execution });
-});
-client.on(Events.MessageUpdate, async (old_message, new_message) => {
-  await logEvent(Events.MessageUpdate, { old_message, new_message });
-});
-client.on(Events.GuildDelete, async (guild) => {
-  await logEvent(Events.GuildDelete, { guild });
-});
-client.on("honeypotCatch", async (member, message) => {
-  await logEvent("honeypotCatch", { member, message });
-});
+logsInitInterval = setInterval(() => {
+  if (!logsInitialized && client) {
+    client.on(Events.ChannelCreate, async (channel) => {
+      await logEvent(Events.ChannelCreate, { channel: channel });
+    });
+    client.on(Events.ChannelDelete, async (channel) => {
+      if (!channel.isDMBased())
+        await logEvent(Events.ChannelDelete, { channel: channel });
+    });
+    client.on(Events.ChannelUpdate, async (old_channel, new_channel) => {
+      await logEvent(Events.ChannelUpdate, { old_channel, new_channel });
+    });
+    // client.on(Events.GuildMemberRemove, (member) => { logEvent(Events.GuildMemberRemove, { member }) })
+    client.on(Events.GuildUpdate, async (old_guild, new_guild) => {
+      await logEvent(Events.GuildUpdate, { old_guild, new_guild });
+    });
+    client.on(Events.GuildRoleCreate, async (role) => {
+      await logEvent(Events.GuildRoleCreate, { role });
+    });
+    client.on(Events.GuildRoleDelete, async (role) => {
+      await logEvent(Events.GuildRoleDelete, { role });
+    });
+    client.on(Events.GuildRoleUpdate, async (old_role, new_role) => {
+      await logEvent(Events.GuildRoleUpdate, { old_role, new_role });
+    });
+    client.on(Events.AutoModerationRuleCreate, async (rule) => {
+      await logEvent(Events.AutoModerationRuleCreate, { rule });
+    });
+    client.on(Events.AutoModerationRuleUpdate, async (old_rule, new_rule) => {
+      await logEvent(Events.AutoModerationRuleUpdate, { old_rule, new_rule });
+    });
+    client.on(Events.AutoModerationRuleDelete, async (rule) => {
+      await logEvent(Events.AutoModerationRuleDelete, { rule });
+    });
+    client.on(Events.AutoModerationActionExecution, async (execution) => {
+      await logEvent(Events.AutoModerationActionExecution, { execution });
+    });
+    client.on(Events.MessageUpdate, async (old_message, new_message) => {
+      await logEvent(Events.MessageUpdate, { old_message, new_message });
+    });
+    client.on(Events.GuildDelete, async (guild) => {
+      await logEvent(Events.GuildDelete, { guild });
+    });
+    client.on("honeypotCatch", async (member, message) => {
+      await logEvent("honeypotCatch", { member, message });
+    });
+    client.on("dailyQuestionEnded", async (mode, question, answersArr) => {
+      await logEvent("dailyQuestionEnded", { mode, question, answersArr });
+    });
+    initDailyEvents();
+    logsInitialized = true;
+    console.log("Initialized Logs");
+    if (logsInitInterval) clearInterval(logsInitInterval);
+  }
+}, 1e3);
 
 client.login(process.env.TOKEN);
 twitchWs.start();

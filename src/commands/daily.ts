@@ -42,10 +42,9 @@ import {
 } from "../db/guilds";
 import { channel } from "node:process";
 import { appEmoji } from "../utils/emojiUtils";
-import { client, dev_mode } from "..";
+import { client, dev_mode } from "../index";
 import { randomUUID } from "node:crypto";
 import { answers, questions } from "../db/schema";
-import { MySqlColumnBuilderWithAutoIncrement } from "drizzle-orm/mysql-core";
 import { wouldYouRatherImage } from "../utils/canvasUtils";
 
 export enum QuestionModes {
@@ -74,57 +73,61 @@ export interface Question {
   prompt?: string;
 }
 
-client.on(
-  "expireDailyQuestion",
-  async (
-    question: typeof questions.$inferInsert,
-    answersArr: (typeof answers.$inferInsert)[],
-    modeId: string,
-    guildId: string,
-  ) => {
-    let questionsArr: Question[] = answersArr.map((a) => ({
-      index: a.index,
-      text: a.answer_text,
-    }));
+export function initDailyEvents() {
+  client.on(
+    "expireDailyQuestion",
+    async (
+      question: typeof questions.$inferInsert,
+      answersArr: (typeof answers.$inferInsert)[],
+      modeId: string,
+      guildId: string,
+    ) => {
+      let questionsArr: Question[] = answersArr.map((a) => ({
+        index: a.index,
+        text: a.answer_text,
+      }));
 
-    let mode = modeId as QuestionModes;
+      let mode = modeId as QuestionModes;
 
-    console.log("EXPIRED EVENT", mode, question, answersArr);
-    await updatePollMessage(
-      guildId,
-      null,
-      mode,
-      question.question_text,
-      questionsArr,
-    );
-  },
-);
+      console.log("EXPIRED EVENT", mode, question, answersArr);
+      if (mode !== QuestionModes.DISCUSSION)
+        client.emit("dailyQuestionEnded", mode, question, answersArr);
+      await updatePollMessage(
+        guildId,
+        null,
+        mode,
+        question.question_text,
+        questionsArr,
+      );
+    },
+  );
 
-client.on(
-  "updateDailyQuestion",
-  async (
-    question: typeof questions.$inferInsert,
-    answersArr: (typeof answers.$inferInsert)[],
-    modeId: string,
-    guildId: string,
-  ) => {
-    let questionsArr: Question[] = answersArr.map((a) => ({
-      index: a.index,
-      text: a.answer_text,
-    }));
+  client.on(
+    "updateDailyQuestion",
+    async (
+      question: typeof questions.$inferInsert,
+      answersArr: (typeof answers.$inferInsert)[],
+      modeId: string,
+      guildId: string,
+    ) => {
+      let questionsArr: Question[] = answersArr.map((a) => ({
+        index: a.index,
+        text: a.answer_text,
+      }));
 
-    let mode = modeId as QuestionModes;
+      let mode = modeId as QuestionModes;
 
-    console.log("UPDATE EVENT", mode, question, answersArr);
-    await updatePollMessage(
-      guildId,
-      null,
-      mode,
-      question.question_text,
-      questionsArr,
-    );
-  },
-);
+      console.log("UPDATE EVENT", mode, question, answersArr);
+      await updatePollMessage(
+        guildId,
+        null,
+        mode,
+        question.question_text,
+        questionsArr,
+      );
+    },
+  );
+}
 
 async function updatePollMessage(
   guildId: string,
@@ -167,6 +170,7 @@ async function updatePollMessage(
         })),
       );
 
+    await (questionChannel as TextChannel).messages.fetch({ cache: true });
     let questionMessage: Message<boolean> | null =
       (await (questionChannel as TextChannel).messages.fetch(
         dbQuestion.question.message_id,
@@ -383,45 +387,41 @@ async function updatePollMessage(
 
           if (questionChannel.isSendable()) {
             if (questionMessage && questionMessage.editable) {
-              if (
-                dbQuestion.question.active &&
-                dbQuestion.question.prompt_id !== null
-              )
-                questionMessage
-                  .edit({
-                    components: [pollContainer.buildContainer()],
-                  })
-                  .then(async () => {
-                    console.log("QUESTIONS (post-edit, expired)", questions);
-                    if (hasWinner && winner) {
-                      let winnerContainer =
-                        new TMComponentBuilder().setAccentColor(Colors.Yellow);
+              questionMessage
+                .edit({
+                  components: [pollContainer.buildContainer()],
+                })
+                .then(async () => {
+                  console.log("QUESTIONS (post-edit, expired)", questions);
+                  if (hasWinner && winner) {
+                    let winnerContainer =
+                      new TMComponentBuilder().setAccentColor(Colors.Yellow);
+                    winnerContainer.addTextDisplay(
+                      `-# Daily Question #${dbGuild.total_daily_questions}: "**${dbQuestion.question.question_text}**"`,
+                    );
+                    winnerContainer.addTextDisplay(
+                      `### ${await appEmoji(client, "jiggy")} We Have a Winner!`,
+                    );
+                    winnerContainer.addSeparator();
+                    winnerContainer.addTextDisplay(
+                      `## 🏆 ${winner.text} (${winnerVotes} vote${winnerVotes === 1 ? "" : "s"})`,
+                    );
+                    if (hasRunnerUp && runnerUp) {
                       winnerContainer.addTextDisplay(
-                        `-# Daily Question #${dbGuild.total_daily_questions}: "**${dbQuestion.question.question_text}**"`,
+                        `### 🥈 ${runnerUp.text} (${runnerUpVotes} vote${runnerUpVotes === 1 ? "" : "s"})`,
                       );
-                      winnerContainer.addTextDisplay(
-                        `### ${await appEmoji(client, "jiggy")} We Have a Winner!`,
-                      );
-                      winnerContainer.addSeparator();
-                      winnerContainer.addTextDisplay(
-                        `## 🏆 ${winner.text} (${winnerVotes} vote${winnerVotes === 1 ? "" : "s"})`,
-                      );
-                      if (hasRunnerUp && runnerUp) {
-                        winnerContainer.addTextDisplay(
-                          `-# Runner-Up\n### 🥈 ${runnerUp.text} (${runnerUpVotes} vote${runnerUpVotes === 1 ? "" : "s"})`,
-                        );
-                      }
-
-                      await questionChannel.send({
-                        flags: [MessageFlags.IsComponentsV2],
-                        components: [winnerContainer.buildContainer()],
-                      });
                     }
-                    return true;
-                  })
-                  .catch((e) => {
-                    return false;
-                  });
+
+                    await questionChannel.send({
+                      flags: [MessageFlags.IsComponentsV2],
+                      components: [winnerContainer.buildContainer()],
+                    });
+                  }
+                  return true;
+                })
+                .catch((e) => {
+                  return false;
+                });
             } else {
               questionChannel
                 .send({

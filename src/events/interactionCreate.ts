@@ -10,6 +10,7 @@ import {
   MessageFlags,
   PermissionFlagsBits,
   roleMention,
+  SeparatorSpacingSize,
   userMention,
 } from "discord.js";
 import { join } from "path";
@@ -205,9 +206,9 @@ export default {
                 answer.votes !== 0;
               console.log("VOTERS (FILT)", filteredVoters);
               votesCont.addTextDisplay(
-                `### \`${isWinning ? "🏆 " : isRunnerUp ? "🥈 " : ""}${answer.votes}\` ${answer.answer_text}\n${filteredVoters.map((v) => `- ${userMention(v.user_id)}`).join("\n")}`,
+                `### \`${isWinning ? "🏆 " : isRunnerUp ? "🥈 " : ""}${answer.votes}\` ${answer.answer_text}\n${filteredVoters.map((v) => `- ${userMention(v.user_id)}${v.user_id === interaction.user.id ? ` **< YOU**` : ""}`).join("\n")}`,
               );
-              votesCont.addSeparator();
+              votesCont.addSeparator(SeparatorSpacingSize.Small, false);
             }
           } else votesCont.addTextDisplay("No votes have been tallied yet.");
 
