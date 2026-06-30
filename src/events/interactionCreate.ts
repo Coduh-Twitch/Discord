@@ -4,23 +4,27 @@ import {
   BaseInteraction,
   blockQuote,
   ButtonInteraction,
+  ButtonStyle,
   ChatInputCommandInteraction,
   codeBlock,
+  Colors,
+  ComponentType,
   Message,
   MessageFlags,
   PermissionFlagsBits,
   roleMention,
   SeparatorSpacingSize,
+  TextChannel,
   userMention,
 } from "discord.js";
 import { join } from "path";
-import { desiredExt, dev_mode } from "..";
+import { client, desiredExt, dev_mode } from "..";
 import { twitchCustomCommandModel } from "../models/twitchCustomCommand";
 import { existsSync } from "fs-extra";
 import config from "../config";
 import { TemporaryFile } from "../classes/TemporaryFile";
 import { TMComponentBuilder } from "../classes/ComponentBuilder";
-import { parseCustomId } from "../utils/customIdUtils";
+import { generateCustomId, parseCustomId } from "../utils/customIdUtils";
 import { appEmoji } from "../utils/emojiUtils";
 import { Command, UserLevel } from "../classes/Command";
 import {
@@ -31,6 +35,13 @@ import {
 } from "../db/guilds";
 import { voters } from "../db/schema";
 import { modes, QuestionModes } from "../commands/daily";
+import {
+  deleteReminder,
+  getAllDmUsers,
+  getDbReminder,
+  subscribeUser,
+  unSubscribeUser,
+} from "../utils/reminderUtils";
 
 let roleReactors: Map<string, string> = new Map<string, string>();
 let roleReactCooldown = 3e3;
@@ -157,6 +168,216 @@ export default {
 
     async function handleButtonPress(interaction: ButtonInteraction) {
       let parsedId = parseCustomId(interaction.customId);
+      if (parsedId.action.startsWith("reminder-")) {
+        let dbReminder = getDbReminder(parsedId.command);
+        if (!dbReminder)
+          return await interaction.reply({
+            flags: [MessageFlags.IsComponentsV2, MessageFlags.Ephemeral],
+            components: [
+              TMComponentBuilder.errorContainer(
+                true,
+                "Failed to find the specified reminder.",
+              ).buildContainer(),
+            ],
+          });
+        let dmUsers = getAllDmUsers(dbReminder.id);
+
+        if (parsedId.action === "reminder-subscribe") {
+          await interaction.deferReply({ flags: [MessageFlags.Ephemeral] });
+          try {
+            if (
+              dmUsers.some(
+                (u) =>
+                  u.reminder_id === dbReminder.id &&
+                  u.user_id === interaction.user.id,
+              )
+            )
+              return await interaction.editReply({
+                flags: [MessageFlags.IsComponentsV2],
+                components: [
+                  TMComponentBuilder.errorContainer(
+                    true,
+                    "You are already subscribed to this reminder.",
+                  ).buildContainer(),
+                ],
+              });
+
+            await subscribeUser(interaction.user.id, dbReminder.id);
+            await interaction.editReply({
+              flags: [MessageFlags.IsComponentsV2],
+              components: [
+                new TMComponentBuilder()
+                  .setAccentColor(Colors.Green)
+                  .addTextDisplay(`Subscribed to reminder \`${dbReminder.id}\``)
+                  .buildContainer(),
+              ],
+            });
+          } catch (e) {
+            await interaction.editReply({
+              flags: [MessageFlags.IsComponentsV2],
+              components: [
+                TMComponentBuilder.errorContainer(
+                  true,
+                  "Failed to subscribe to reminder.",
+                ).buildContainer(),
+              ],
+            });
+          }
+        }
+
+        if (parsedId.action === "reminder-unsubscribe") {
+          await interaction.deferReply({ flags: [MessageFlags.Ephemeral] });
+          try {
+            if (
+              !dmUsers.some(
+                (u) =>
+                  u.reminder_id === dbReminder.id &&
+                  u.user_id === interaction.user.id,
+              )
+            )
+              return await interaction.editReply({
+                flags: [MessageFlags.IsComponentsV2],
+                components: [
+                  TMComponentBuilder.errorContainer(
+                    true,
+                    "You are not subscribed to this reminder.",
+                  ).buildContainer(),
+                ],
+              });
+
+            await unSubscribeUser(interaction.user.id, dbReminder.id);
+            await interaction.editReply({
+              flags: [MessageFlags.IsComponentsV2],
+              components: [
+                new TMComponentBuilder()
+                  .setAccentColor(Colors.Green)
+                  .addTextDisplay(
+                    `Unsubscribed from reminder \`${dbReminder.id}\``,
+                  )
+                  .buildContainer(),
+              ],
+            });
+          } catch (e) {
+            await interaction.editReply({
+              flags: [MessageFlags.IsComponentsV2],
+              components: [
+                TMComponentBuilder.errorContainer(
+                  true,
+                  "Failed to unsubscribe from reminder.",
+                ).buildContainer(),
+              ],
+            });
+          }
+        }
+
+        if (parsedId.action === "reminder-delete") {
+          const confirmResponse = await interaction.deferReply({
+            flags: [MessageFlags.Ephemeral],
+            withResponse: true,
+          });
+
+          if (!dbReminder)
+            return interaction.editReply({
+              flags: [, MessageFlags.IsComponentsV2],
+              components: [
+                TMComponentBuilder.errorContainer(
+                  true,
+                  `Reminder not found.`,
+                ).buildContainer(),
+              ],
+            });
+
+          let expirationMs = 60e3;
+          let expiresAt = Math.floor((Date.now() + expirationMs) / 1000);
+
+          const confirmCont = new TMComponentBuilder().setAccentColor(
+            Colors.Yellow,
+          );
+          confirmCont.addTextDisplay(
+            `## Confirm Reminder Deletion\nAre you sure you want to delete reminder with ID \`${dbReminder.id}\`?\n### Reminder Content\n${codeBlock(dbReminder.content)}\n\n-# Choose "Confirm" to continue | Interaction Expires <t:${expiresAt}:R>`,
+          );
+          confirmCont.addSeparator(SeparatorSpacingSize.Small, false);
+          confirmCont.addButtonActionRow([
+            TMComponentBuilder.accessoryButton(
+              ButtonStyle.Success,
+              "Confirm",
+              null,
+              null,
+              parseCustomId(generateCustomId(interaction, "confirm-delete")),
+            ),
+            TMComponentBuilder.accessoryButton(
+              ButtonStyle.Danger,
+              "Cancel",
+              null,
+              null,
+              parseCustomId(generateCustomId(interaction, "cancel-delete")),
+            ),
+          ]);
+
+          await interaction.editReply({
+            flags: [MessageFlags.IsComponentsV2],
+            components: [confirmCont.buildContainer()],
+          });
+
+          let confirmInt: ButtonInteraction | null;
+          confirmInt = await confirmResponse.resource.message
+            .awaitMessageComponent({
+              componentType: ComponentType.Button,
+              filter: (i) => i.user.id === interaction.user.id,
+              time: expirationMs,
+            })
+            .catch(() => (confirmInt = null));
+
+          if (!confirmInt) {
+            return interaction.editReply({
+              components: [
+                TMComponentBuilder.errorContainer().buildContainer(),
+              ],
+            });
+          } else {
+            if (confirmInt.customId.includes("cancel-delete"))
+              return interaction.editReply({
+                components: [
+                  TMComponentBuilder.errorContainer(true).buildContainer(),
+                ],
+              });
+
+            let reminderChannel = interaction.guild.channels.cache.get(
+              config.channels.reminders,
+            ) as TextChannel;
+            let reminderMessage =
+              (await reminderChannel.messages.fetch(dbReminder.message_id)) ||
+              null;
+
+            try {
+              if (reminderMessage && reminderMessage.deletable)
+                await reminderMessage.delete();
+              deleteReminder(dbReminder.id);
+              client.emit("reminderDeleted", dbReminder, interaction.user);
+
+              interaction.editReply({
+                components: [
+                  new TMComponentBuilder()
+                    .setAccentColor(Colors.Green)
+                    .addTextDisplay(
+                      `Successfully deleted reminder \`${dbReminder.id}\``,
+                    )
+                    .buildContainer(),
+                ],
+              });
+            } catch (e) {
+              interaction.editReply({
+                components: [
+                  TMComponentBuilder.errorContainer(
+                    true,
+                    `Failed to delete reminder \`${dbReminder.id}\`\n${codeBlock(e)}`,
+                  ).buildContainer(),
+                ],
+              });
+            }
+          }
+        }
+      }
       if (parsedId.interactionId === "dailyquestion") {
         if (parsedId.command === "voters") {
           await interaction.deferReply({ flags: [MessageFlags.Ephemeral] });

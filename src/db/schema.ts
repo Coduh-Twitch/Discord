@@ -47,3 +47,27 @@ export const voters = sqliteTable("voters", {
   user_id: text("user_id").primaryKey().notNull(),
   vote_index: integer("vote_index"),
 });
+
+export const reminders = sqliteTable("reminders", {
+  id: text("id")
+    .notNull()
+    .primaryKey()
+    .$defaultFn(() => randomUUID()),
+  guild_id: text("guild_id").notNull(),
+  message_id: text("message_id"),
+  content: text("content").notNull(),
+  next_send_timestamp: integer("next_send_timestamp").notNull().default(0), // timestamp; 0 = disabled
+  interval_weekday: integer("interval_weekday").notNull().default(0), // day of the week; 1-7; 0 = disabled
+  interval_months: integer("interval_months").notNull().default(0), // amount of months; 0 = disabled
+  interval_days: integer("interval_days").notNull().default(0), // amount of days; 0 = disabled
+  interval_hours: integer("interval_hours").notNull().default(0), // amount of hours; 0 = disabled
+  interval_minutes: integer("interval_minutes").notNull().default(0), // amount of minutes; 0 = disabled
+});
+
+export const reminder_dm_users = sqliteTable("reminder_dm_users", {
+  reminder_id: text("reminder_id")
+    .notNull()
+    .references(() => reminders.id),
+  user_id: text("user_id").notNull(),
+  snoozed_until: integer("snoozed_until").notNull().default(0), // timestamp; 0 = disabled
+});

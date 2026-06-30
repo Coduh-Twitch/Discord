@@ -39,6 +39,7 @@ import {
   TextBasedChannel,
   TextChannel,
   ThreadAutoArchiveDuration,
+  User,
   userMention,
   VoiceChannel,
 } from "discord.js";
@@ -94,7 +95,14 @@ import {
   getDbGuild,
 } from "./db/guilds";
 import { initDailyEvents, modes, QuestionModes } from "./commands/daily";
-import { answers, questions, voters } from "./db/schema";
+import { answers, questions, reminders, voters } from "./db/schema";
+import { createCustomId, parseCustomId } from "./utils/customIdUtils";
+import { randomUUID } from "crypto";
+import {
+  getAllDmUsers,
+  getAllGuildReminders,
+  nextReminderTimestamp,
+} from "./utils/reminderUtils";
 
 // throw new Error(generateDependencyReport());
 
@@ -412,6 +420,21 @@ async function initBot(c: Client) {
               dbQuestion.question.mode,
               dbQuestion.question.guild_id,
             );
+          }
+        }
+
+        // Send reminders
+        const allReminders = getAllGuildReminders(config.guild).filter(
+          (r) => Date.now() >= r.next_send_timestamp,
+        );
+
+        for (const reminder of allReminders) {
+          const dmUsers = getAllDmUsers(reminder.id, true);
+
+          for (const dmUser of dmUsers) {
+            let user = await client.users.fetch(dmUser.user_id);
+            reminder.next_send_timestamp = nextReminderTimestamp(reminder);
+            client.emit("reminderDmNotification", user, reminder);
           }
         }
       }, 1e3);
@@ -1702,7 +1725,230 @@ export async function logEvent(
       });
       break;
     }
+
+    case "reminderDmSubscriptionAdded": {
+      let user: User = args["user"];
+      let reminder: typeof reminders.$inferInsert = args["reminder"];
+
+      const container = new TMComponentBuilder().setAccentColor(
+        config.brand_color,
+      );
+      container.addTextDisplay(
+        `## Subscribed to Reminder\n-# Reminder ID \`${reminder.id}\`\n\nYou have subscribed to DM updates for a reminder. The next reminder will be sent <t:${Math.floor(reminder.next_send_timestamp / 1000)}:R>\n### Reminder Content\n${codeBlock(reminder.content)}`,
+      );
+      // container.addSeparator();
+      // container.addTextDisplay(`-# Click "Snooze" to snooze this reminder`);
+      // container.addSeparator(SeparatorSpacingSize.Small, false);
+      // await addSnoozeButtons(reminder, container);
+      container.addSeparator();
+      let bs = [
+        TMComponentBuilder.accessoryButton(
+          ButtonStyle.Danger,
+          "Unsubscribe",
+          null,
+          { id: (await appEmoji(client, "reminder_unsubscribe")).id },
+          parseCustomId(
+            createCustomId({
+              interactionId: randomUUID(),
+              action: `reminder-unsubscribe`,
+              command: reminder.id,
+            }),
+          ),
+        ),
+      ];
+
+      let allDmUsers = getAllDmUsers(reminder.id);
+      let snoozedUntil = allDmUsers.find(
+        (u) => u.user_id === user.id,
+      ).snoozed_until;
+
+      if (snoozedUntil !== 0 && snoozedUntil >= Date.now())
+        bs.push(
+          TMComponentBuilder.accessoryButton(
+            ButtonStyle.Success,
+            "Un-Snooze Reminder",
+            null,
+            null,
+            parseCustomId(
+              createCustomId({
+                interactionId: randomUUID(),
+                action: `reminder-unsnooze`,
+                command: reminder.id,
+              }),
+            ),
+          ),
+        );
+
+      container.addButtonActionRow(bs);
+
+      user
+        .send({
+          flags: [MessageFlags.IsComponentsV2],
+          components: [container.buildContainer()],
+        })
+        .catch(() => {
+          //oops
+        });
+
+      break;
+    }
+
+    case "reminderDmSubscriptionRemoved": {
+      let user: User = args["user"];
+      let reminder: typeof reminders.$inferInsert = args["reminder"] || null;
+      let deleted = args["deleted"] || false;
+
+      const container = new TMComponentBuilder().setAccentColor(
+        config.brand_color,
+      );
+      container.addTextDisplay(
+        `## Unsubscribed from Reminder\n-# Reminder ID \`${reminder.id}\`\n\nYou have${deleted ? " been" : ""} unsubscribed from DM updates for a reminder${deleted ? " because it was deleted" : ""}.\n\nYou will no longer receive messages regarding this specific reminder.`,
+      );
+      container.addSeparator();
+      if (!deleted)
+        container.addButtonActionRow([
+          TMComponentBuilder.accessoryButton(
+            ButtonStyle.Success,
+            "Re-Subscribe",
+            null,
+            { id: (await appEmoji(client, "reminder_subscribe")).id },
+            parseCustomId(
+              createCustomId({
+                interactionId: randomUUID(),
+                action: `reminder-subscribe`,
+                command: reminder.id,
+              }),
+            ),
+          ),
+        ]);
+
+      user
+        .send({
+          flags: [MessageFlags.IsComponentsV2],
+          components: [container.buildContainer()],
+        })
+        .catch(() => {
+          //oops
+        });
+      break;
+    }
+
+    case "reminderDmNotification": {
+      let user: User = args["user"];
+      let reminder: typeof reminders.$inferInsert = args["reminder"];
+
+      const container = new TMComponentBuilder().setAccentColor(
+        config.brand_color,
+      );
+      container.addTextDisplay(
+        `-# Reminder ID \`${reminder.id}\` | Next Reminder <t:${Math.floor(reminder.next_send_timestamp / 1000)}:R>\n### Reminder Content\n${codeBlock(reminder.content)}`,
+      );
+      // container.addSeparator();
+      // container.addTextDisplay(`-# Click "Snooze" to snooze this reminder`);
+      // container.addSeparator(SeparatorSpacingSize.Small, false);
+      // await addSnoozeButtons(reminder, container);
+      container.addSeparator();
+      container.addButtonAccessorySection(
+        `You received this message because you are subscribed to this reminder's DM updates.`,
+        null,
+        null,
+        null,
+        null,
+        TMComponentBuilder.accessoryButton(
+          ButtonStyle.Danger,
+          "Unsubscribe",
+          null,
+          { id: (await appEmoji(client, "reminder_unsubscribe")).id },
+          parseCustomId(
+            createCustomId({
+              interactionId: randomUUID(),
+              action: `reminder-unsubscribe`,
+              command: reminder.id,
+            }),
+          ),
+        ),
+      );
+
+      user
+        .send({
+          flags: [MessageFlags.IsComponentsV2],
+          components: [container.buildContainer()],
+        })
+        .catch(() => {
+          //oops
+        });
+
+      break;
+    }
   }
+}
+
+async function addSnoozeButtons(
+  reminder: typeof reminders.$inferInsert,
+  container: TMComponentBuilder,
+): Promise<TMComponentBuilder> {
+  let options = [
+    { name: "5 Minutes", value: 300 },
+    { name: "10 Minutes", value: 600 },
+    { name: "30 Minutes", value: 1800 },
+    { name: "1 Hour", value: 3600 },
+    { name: "3 Hours", value: 3600 * 3 },
+    { name: "8 Hours", value: 3600 * 8 },
+    { name: "1 Day", value: 3600 * 24 },
+  ];
+
+  let differenceSeconds = Math.round(
+    Date.now() / 1000 - reminder.next_send_timestamp / 1000,
+  );
+
+  options = options.filter((o) =>
+    !Number.isNaN(Number(o.value))
+      ? true
+      : (o.value as number) < differenceSeconds,
+  );
+
+  let buttons = [];
+
+  for (const option of options) {
+    if (buttons.length < 5) {
+      buttons.push(
+        TMComponentBuilder.accessoryButton(
+          ButtonStyle.Secondary,
+          `⏱️ Snooze ${option.name}`,
+          null,
+          null,
+          parseCustomId(
+            createCustomId({
+              interactionId: randomUUID(),
+              action: `reminder-snooze`,
+              command: reminder.id,
+              subcommand: option.value.toString(),
+            }),
+          ),
+        ),
+      );
+    } else {
+      container.addButtonActionRow(buttons);
+      buttons = [
+        TMComponentBuilder.accessoryButton(
+          ButtonStyle.Secondary,
+          `⏱️ snooze ${option.name}`,
+          null,
+          null,
+          parseCustomId(
+            createCustomId({
+              interactionId: randomUUID(),
+              action: `reminder-snooze`,
+              command: reminder.id,
+              subcommand: option.value.toString(),
+            }),
+          ),
+        ),
+      ];
+    }
+  }
+
+  return container;
 }
 
 export const toHHMMSS = (secs: number) => {
@@ -1796,6 +2042,22 @@ logsInitInterval = setInterval(() => {
     });
     client.on("dailyQuestionEnded", async (mode, question, answersArr) => {
       await logEvent("dailyQuestionEnded", { mode, question, answersArr });
+    });
+    client.on("reminderDmSubscriptionAdded", async (user, reminder) => {
+      await logEvent("reminderDmSubscriptionAdded", { user, reminder });
+    });
+    client.on(
+      "reminderDmSubscriptionRemoved",
+      async (user, reminder, deleted) => {
+        await logEvent("reminderDmSubscriptionRemoved", {
+          user,
+          reminder,
+          deleted,
+        });
+      },
+    );
+    client.on("reminderDmNotification", async (user, reminder) => {
+      await logEvent("reminderDmNotification", { user, reminder });
     });
     initDailyEvents();
     logsInitialized = true;
