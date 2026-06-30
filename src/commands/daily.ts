@@ -245,7 +245,7 @@ async function updatePollMessage(
           }
 
           if (dbQuestion.question.active) {
-            pollContainer.addTextDisplay("### Vote Below");
+            pollContainer.addTextDisplay("## Click to Vote");
             pollContainer.addButtonActionRow(buttons);
             if (buttons2.length > 0) pollContainer.addButtonActionRow(buttons2);
             pollContainer.addSeparator(SeparatorSpacingSize.Small, false);
@@ -543,7 +543,7 @@ async function updatePollMessage(
         wywContainer.addSeparator();
 
         if (dbQuestion.question.active) {
-          wywContainer.addTextDisplay("### Vote Below");
+          wywContainer.addTextDisplay("## Click to Vote");
 
           let buttons = [];
 
