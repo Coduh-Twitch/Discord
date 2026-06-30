@@ -366,13 +366,13 @@ export function wouldYouRatherImage(
     });
 
     ctx.fillText(
-      `Would You Rather | ${formatter.format(Date.now())}`,
+      `Would You Rather`,
       footerXOffset,
       footerYOffset,
       footerMaxWidth,
     );
     ctx.strokeText(
-      `Would You Rather | ${formatter.format(Date.now())}`,
+      `Would You Rather`,
       footerXOffset,
       footerYOffset,
       footerMaxWidth,
