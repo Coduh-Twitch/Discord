@@ -1675,9 +1675,13 @@ export async function logEvent(
             (v) => v.vote_index === answer.index,
           );
           let isWinning =
-            answersArr[0].index === answer.index && answer.votes !== 0;
+            answersArr[0].index === answer.index &&
+            answer.votes !== 0 &&
+            answersArr[0].votes !== answersArr[1].votes;
           let isRunnerUp =
-            answersArr[1].index === answer.index && answer.votes !== 0;
+            answersArr[1].index === answer.index &&
+            answer.votes !== 0 &&
+            answersArr[0].votes !== answersArr[1].votes;
           console.log("VOTERS (FILT)", filteredVoters);
           votesCont.addTextDisplay(
             `### \`${isWinning ? "🏆 " : isRunnerUp ? "🥈 " : ""}${answer.votes}\` ${answer.answer_text}\n${(await Promise.all(filteredVoters.map(async (v) => `- ${(await client.users.fetch(v.user_id)).username}`))).join("\n")}`,

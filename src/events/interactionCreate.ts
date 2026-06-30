@@ -200,10 +200,12 @@ export default {
               );
               let isWinning =
                 dbQuestion.answers[0].index === answer.index &&
-                answer.votes !== 0;
+                answer.votes !== 0 &&
+                dbQuestion.answers[0].votes !== dbQuestion.answers[1].votes;
               let isRunnerUp =
                 dbQuestion.answers[1].index === answer.index &&
-                answer.votes !== 0;
+                answer.votes !== 0 &&
+                dbQuestion.answers[0].votes !== dbQuestion.answers[1].votes;
               console.log("VOTERS (FILT)", filteredVoters);
               votesCont.addTextDisplay(
                 `### \`${isWinning ? "🏆 " : isRunnerUp ? "🥈 " : ""}${answer.votes}\` ${answer.answer_text}\n${filteredVoters.map((v) => `- ${userMention(v.user_id)}${v.user_id === interaction.user.id ? ` **< YOU**` : ""}`).join("\n")}`,
