@@ -183,7 +183,7 @@ async function updatePollMessage(
             config.brand_color,
           );
           pollContainer.addHeadingWithSeparator(
-            `${roleMention(config.roles.daily_questions)} #${dbGuild.total_daily_questions}\n-# ${senderId ? `From ${userMention(senderId)} | ` : ""}<t:${Math.floor(Date.now() / 1000)}:F>`,
+            `${roleMention(config.roles.daily_questions)} #${dbGuild.total_daily_questions}\n-# ${senderId ? `From ${userMention(senderId)} | ` : ""}Last Updated <t:${Math.floor(Date.now() / 1000)}:F>`,
             3,
           );
 
@@ -452,7 +452,7 @@ async function updatePollMessage(
           config.brand_color,
         );
         discussionContainer.addHeadingWithSeparator(
-          `Daily Question #${dbGuild.total_daily_questions}\n-# ${senderId ? `From ${userMention(senderId)} | ` : ""}<t:${Math.floor(Date.now() / 1000)}:F>`,
+          `Daily Question #${dbGuild.total_daily_questions}\n-# ${senderId ? `From ${userMention(senderId)} | ` : ""}Last Updated <t:${Math.floor(Date.now() / 1000)}:F>`,
           3,
         );
         discussionContainer.addTextDisplay(
@@ -528,7 +528,7 @@ async function updatePollMessage(
 
         const wywContainer = new TMComponentBuilder();
         wywContainer.addHeadingWithSeparator(
-          `${roleMention(config.roles.daily_questions)} #${dbGuild.total_daily_questions}\n-# ${senderId ? `From ${userMention(senderId)} | ` : ""}<t:${Math.floor(Date.now() / 1000)}:F>`,
+          `${roleMention(config.roles.daily_questions)} #${dbGuild.total_daily_questions}\n-# ${senderId ? `From ${userMention(senderId)} | ` : ""}Last Updated <t:${Math.floor(Date.now() / 1000)}:F>`,
           3,
         );
 
