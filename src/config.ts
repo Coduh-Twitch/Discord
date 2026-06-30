@@ -14,6 +14,7 @@ const config = {
     return spaces ? s.replaceAll("_", " ") : s.replaceAll(" ", "_");
   },
   channels: {
+    reminders: "1521370244717744198",
     daily_questions: "1521094057043169351",
     hangout: "1485227800796332162",
     rules: "1504618087717142628",
