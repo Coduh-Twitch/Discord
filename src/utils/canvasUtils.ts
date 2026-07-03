@@ -56,6 +56,11 @@ export function memberWelcomeImage(
     const canvas: Canvas = createCanvas(2100, 850);
     const ctx: SKRSContext2D = canvas.getContext("2d");
 
+    GlobalFonts.registerFromPath(
+      join(process.cwd(), "src", "fonts", "Inter-Black.ttf"),
+      "Inter Black",
+    );
+
     avg(m.displayAvatarURL(), true).then((memberAvgColor: string) => {
       let strokeColor = "#142E35";
 
@@ -121,7 +126,7 @@ export function memberWelcomeImage(
 
         let lineHeight = 90;
 
-        ctx.font = "900 90px Open Sans";
+        ctx.font = '900 90px "Inter Black"';
         ctx.fillStyle = "#ffffffcc";
 
         ctx.fillText(
@@ -131,7 +136,7 @@ export function memberWelcomeImage(
           1300,
         );
 
-        ctx.font = "600 70px Open Sans";
+        ctx.font = '600 70px "Inter Black"';
         // ctx.fillStyle = "#78e1fdd7";
         ctx.fillStyle = `${memberAvgColor}`;
 
@@ -142,7 +147,7 @@ export function memberWelcomeImage(
           1300,
         );
 
-        ctx.font = "900 90px Open Sans";
+        ctx.font = '900 90px "Inter Black"';
         ctx.fillStyle = "#ffffffcc";
         ctx.fillText(
           `You're the ${ordinal_suffix_of(m.guild.memberCount)} member!`,
