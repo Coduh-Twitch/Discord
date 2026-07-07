@@ -1,5 +1,8 @@
 import {
   blockQuote,
+  ButtonInteraction,
+  ButtonStyle,
+  ComponentType,
   EmbedType,
   Message,
   MessageFlags,
@@ -23,6 +26,13 @@ import { addPoints } from "../utils/pointUtils";
 import { DBRaffleParticipant, raffleModel } from "../models/raffle";
 import { appEmoji } from "../utils/emojiUtils";
 import { getMee6Leaderboard } from "../commands/syncxp";
+import { TMComponentBuilder } from "../classes/ComponentBuilder";
+import {
+  createCustomId,
+  generateCustomId,
+  parseCustomId,
+} from "../utils/customIdUtils";
+import { start } from "node:repl";
 
 export default {
   enabled: true,
@@ -93,6 +103,125 @@ export default {
     }
     if (message.author.bot) return;
     if (!dev_mode && message.content.length < 5) return;
+
+    if (message.channelId === config.channels.jackbox) {
+      const code = message.content.trim().toUpperCase();
+      if (code.length === 4 && message.author.id === config.coduh) {
+        message.react("🎮");
+        let container = new TMComponentBuilder().setAccentColor(
+          config.brand_color,
+        );
+        container.addTextDisplay(`## Code Detected\nHiding Channel...`);
+
+        const channel: TextChannel = message.channel as TextChannel;
+
+        message
+          .reply({
+            flags: [MessageFlags.IsComponentsV2],
+            components: [container.buildContainer()],
+          })
+          .then((m) => {
+            channel.permissionOverwrites
+              .edit(message.guildId, { ViewChannel: false })
+              .then(async () => {
+                if (message.deletable) await message.delete();
+
+                const hiddenMs = 30e3;
+                const hiddenUntil = Math.floor((Date.now() + hiddenMs) / 1000);
+
+                container = new TMComponentBuilder().setAccentColor(
+                  config.brand_color,
+                );
+                container.addTextDisplay(`-# The code is:\n# ${code}`);
+                container.addSeparator();
+                container.addTextDisplay(
+                  `The lobby is filling up. Enter the code above at https://jackbox.tv to join the game!\n-# The channel is currently priority-only. It wil be public <t:${hiddenUntil}:R>`,
+                );
+
+                m.edit({
+                  flags: [MessageFlags.IsComponentsV2],
+                  components: [container.buildContainer()],
+                })
+                  .then(async (mm) => {
+                    setTimeout(async () => {
+                      container = new TMComponentBuilder().setAccentColor(
+                        config.brand_color,
+                      );
+                      container.addTextDisplay(`-# The code is:\n# ${code}`);
+                      container.addSeparator();
+                      container.addTextDisplay(
+                        `The lobby is filling up. Enter the code above at https://jackbox.tv to join the game!`,
+                      );
+                      await channel.permissionOverwrites.edit(message.guildId, {
+                        ViewChannel: true,
+                      });
+                      container.addSeparator();
+                      container.addButtonActionRow([
+                        TMComponentBuilder.accessoryButton(
+                          ButtonStyle.Secondary,
+                          "[Admin] Start Game",
+                          null,
+                          null,
+                          { interactionId: message.id, action: "start-game" },
+                        ),
+                      ]);
+
+                      const res = await mm.edit({
+                        flags: [MessageFlags.IsComponentsV2],
+                        components: [container.buildContainer()],
+                      });
+                      let startInt: ButtonInteraction | null;
+                      startInt = await m
+                        .awaitMessageComponent({
+                          componentType: ComponentType.Button,
+                          filter: (i) =>
+                            i.guild.members.cache
+                              .get(i.user.id)
+                              .permissions.has(
+                                PermissionFlagsBits.Administrator,
+                              ),
+                        })
+                        .catch(() => (startInt = null));
+
+                      if (
+                        startInt &&
+                        startInt.customId.includes("start-game")
+                      ) {
+                        if (mm.deletable) {
+                          await mm.delete();
+                          startInt.reply({
+                            flags: [MessageFlags.Ephemeral],
+                            content: `Started Game`,
+                          });
+                        } else {
+                          startInt.reply({
+                            flags: [MessageFlags.Ephemeral],
+                            content: `Couldn't delete code message. Please delete it yourself. Enjoy the game!`,
+                          });
+                        }
+
+                        let deleteM = await channel.send({
+                          content: `The most recent Jackbox game started <t:${Math.floor(Date.now() / 1000)}:R>\n\nCheck Twitch chat to join the audience!`,
+                        });
+                        setTimeout(async () => {
+                          if (deleteM.deletable) await deleteM.delete();
+                        }, 30e3);
+                      }
+                    }, hiddenMs);
+                  })
+                  .catch(() => {
+                    channel.send({ content: `Code: **${code}**` });
+                  });
+              })
+              .catch(async () => {
+                if (m.deletable) await m.delete();
+              });
+          })
+          .catch((e) => {
+            //oops
+          });
+      }
+    }
 
     if (message.channelId === config.channels.honeypot) {
       if (
