@@ -954,7 +954,7 @@ const MovieCommand: Command = {
                 config.channels.movie_night_stage,
               ) as StageChannel;
               let announcementChannel = interaction.guild.channels.cache.get(
-                config.channels.announcements,
+                config.channels.ticket_booth,
               );
 
               let modalTimeout = 120e3;
