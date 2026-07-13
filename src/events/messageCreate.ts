@@ -102,7 +102,14 @@ export default {
       }
     }
     if (message.author.bot) return;
-    if (!dev_mode && message.content.length < 5) return;
+    if (
+      !dev_mode &&
+      message.content.length < 5 &&
+      ![config.channels.honeypot, config.channels.jackbox].includes(
+        message.channelId,
+      )
+    )
+      return;
 
     if (message.channelId === config.channels.jackbox) {
       const code = message.content.trim().toUpperCase();
