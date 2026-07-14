@@ -5,13 +5,24 @@ import {
   Image,
   GlobalFonts,
   SKRSContext2D,
+  loadImage,
 } from "@napi-rs/canvas";
-import { AttachmentBuilder, GuildMember, MessageFlags } from "discord.js";
+import {
+  AttachmentBuilder,
+  GuildMember,
+  ImageSize,
+  MessageFlags,
+} from "discord.js";
 import { TMComponentBuilder } from "../classes/ComponentBuilder";
 import { avg } from "..";
 import { Question } from "../commands/daily";
 import { answers } from "../db/schema";
 import { join } from "path";
+import { RPS } from "../commands/rps";
+import config from "../config";
+import { X509Certificate } from "crypto";
+import { RefreshingAuthProvider } from "@twurple/auth";
+import { start } from "repl";
 
 function roundedImage(
   ctx: CanvasRenderingContext2D,
@@ -458,5 +469,378 @@ export function wouldYouRatherImage(
     let attachmentUrl = `attachment://${attachmentName}`;
 
     resolve({ attachment: at, url: attachmentUrl });
+  });
+}
+
+export function rpsHeaderImage(
+  game: RPS.Game,
+): Promise<{ attachment: AttachmentBuilder; url: string } | null> {
+  return new Promise((resolve) => {
+    const canvas: Canvas = createCanvas(1920, 1080 / 3);
+    const ctx: SKRSContext2D = canvas.getContext("2d");
+
+    GlobalFonts.registerFromPath(
+      join(process.cwd(), "src", "fonts", "Inter-Black.ttf"),
+      "Inter Black",
+    );
+
+    GlobalFonts.registerFromPath(
+      join(process.cwd(), "src", "fonts", "RacersDelight.otf"),
+      "Racer",
+    );
+
+    GlobalFonts.registerFromPath(
+      join(process.cwd(), "src", "fonts", "Inter-SemiBold.ttf"),
+      "Inter SemiBold",
+    );
+
+    GlobalFonts.registerFromPath(
+      join(process.cwd(), "src", "fonts", "NotoColorEmoji.ttf"),
+      "Noto Color Emoji",
+    );
+
+    // game.rounds = game.rounds.filter((r) => r.result !== RPS.RoundResult.TIE);
+
+    let w = canvas.width;
+    let h = canvas.height;
+    let profileImageSize = 256;
+    let padding = 50;
+    let backgroundColor = "#256f81";
+    let strokeColor = "#1b5260";
+
+    ctx.save();
+
+    ctx.fillStyle = backgroundColor;
+    ctx.fillRect(0, 0, w, h);
+
+    // Player Profile Icons
+
+    // Player 1 (Left)
+    const player_1_image = loadImage(
+      game.player_1.displayAvatarURL({
+        forceStatic: true,
+        extension: "png",
+        size: 256,
+      }),
+    );
+
+    // Player 2 (Right)
+    const player_2_image = loadImage(
+      game.player_2.displayAvatarURL({
+        forceStatic: true,
+        extension: "png",
+        size: 256,
+      }),
+    );
+    player_1_image.then((loadedImage) => {
+      player_2_image.then((loadedImage2) => {
+        // Left (Player 1)
+        ctx.save();
+        ctx.strokeStyle = strokeColor;
+
+        if (!game.plays.player_1) ctx.filter = "grayscale(100%)";
+
+        roundedImage(
+          ctx,
+          padding,
+          h / 2 - profileImageSize / 2,
+          profileImageSize,
+          profileImageSize,
+          profileImageSize / 2, // Radius
+        ); // Left (Player 1)
+        ctx.stroke();
+        ctx.clip();
+        ctx.drawImage(
+          loadedImage,
+          padding,
+          h / 2 - profileImageSize / 2,
+          profileImageSize,
+          profileImageSize,
+        ); // Left (Player 1)
+        ctx.restore();
+
+        // Right (Player 2)
+        ctx.save();
+        ctx.strokeStyle = strokeColor;
+
+        if (!game.plays.player_2) ctx.filter = "grayscale(100%)";
+
+        roundedImage(
+          ctx,
+          w - padding - profileImageSize,
+          h / 2 - profileImageSize / 2,
+          profileImageSize,
+          profileImageSize,
+          profileImageSize / 2, // Radius
+        ); // Right (Player 2)
+        ctx.stroke();
+        ctx.clip();
+        ctx.drawImage(
+          loadedImage2,
+          w - padding - profileImageSize,
+          h / 2 - profileImageSize / 2,
+          profileImageSize,
+          profileImageSize,
+        ); // Right (Player 2)
+        ctx.restore();
+
+        // Middle Line
+        let lineWidth = 10;
+        let lineHeight = h / 1.25;
+        ctx.fillStyle = strokeColor;
+        ctx.strokeStyle = strokeColor;
+        ctx.beginPath();
+        ctx.roundRect(
+          w / 2 - lineWidth / 2,
+          h / 2 - lineHeight / 2,
+          lineWidth,
+          lineHeight,
+          10,
+        );
+        ctx.stroke();
+        ctx.fill();
+        ctx.restore();
+
+        // Moves Text
+        let moveYOffset = 25;
+        ctx.font = '128px "Inter Black", "Noto Color Emoji"';
+        ctx.textAlign = "center";
+        ctx.fillStyle = "#ffffff";
+        ctx.lineWidth = 9;
+
+        let player_1_icons = game.rounds
+          .slice(-3)
+          .map((r) => `${RPS.Icons[r.player_1_choice]}`)
+          .join(" ");
+
+        let player_2_icons = game.rounds
+          .slice(-3)
+          .map((r) => `${RPS.Icons[r.player_2_choice]}`)
+          .reverse()
+          .join(" ");
+
+        // Left Moves (Player 1)
+        ctx.textAlign = "left";
+        ctx.fillText(
+          player_1_icons,
+          profileImageSize + padding * 2,
+          h / 2 + moveYOffset,
+        );
+
+        // Right Moves (Player 2)
+        ctx.textAlign = "right";
+        ctx.fillText(
+          player_2_icons,
+          w - (profileImageSize + padding * 2),
+          h / 2 + moveYOffset,
+        );
+
+        ctx.font = '64px "Inter Black", "Noto Color Emoji"';
+        ctx.textAlign = "center";
+        ctx.fillStyle = strokeColor;
+        ctx.lineWidth = 9;
+
+        // let i = 0;
+        let startIndex = Math.max(0, game.rounds.length - 3);
+
+        let ii = 0;
+        for (var index = startIndex; index < game.rounds.length; index++) {
+          let i = index + 1;
+          ii += 1;
+
+          // Left Round Labels
+          ctx.textAlign = "left";
+          ctx.fillText(
+            `R${i}`,
+            profileImageSize + (padding / 2) * 3 * (ii * 2.5) - padding / 2,
+            h / 2 + moveYOffset + 100,
+          );
+
+          // Right Round Labels
+          ctx.textAlign = "right";
+          ctx.fillText(
+            `R${i}`,
+            w -
+              (profileImageSize + (padding / 2) * 3 * (ii * 2.2) - padding / 2),
+            h / 2 + moveYOffset + 100,
+          );
+        }
+
+        let exported = canvas.toBuffer("image/png");
+        let attachmentName = `rps-heading-${Date.now()}.png`;
+        const at = new AttachmentBuilder(exported, { name: attachmentName });
+        let attachmentUrl = `attachment://${attachmentName}`;
+
+        resolve({ attachment: at, url: attachmentUrl });
+      });
+    });
+  });
+}
+
+export function rpsWinnerImage(
+  game: RPS.Game,
+): Promise<{ attachment: AttachmentBuilder; url: string } | null> {
+  return new Promise((resolve) => {
+    const canvas: Canvas = createCanvas(1920, 720);
+    const ctx: SKRSContext2D = canvas.getContext("2d");
+
+    GlobalFonts.registerFromPath(
+      join(process.cwd(), "src", "fonts", "Inter-Black.ttf"),
+      "Inter Black",
+    );
+
+    GlobalFonts.registerFromPath(
+      join(process.cwd(), "src", "fonts", "RacersDelight.otf"),
+      "Racer",
+    );
+
+    GlobalFonts.registerFromPath(
+      join(process.cwd(), "src", "fonts", "Inter-SemiBold.ttf"),
+      "Inter SemiBold",
+    );
+
+    GlobalFonts.registerFromPath(
+      join(process.cwd(), "src", "fonts", "NotoColorEmoji.ttf"),
+      "Noto Color Emoji",
+    );
+
+    let w = canvas.width;
+    let h = canvas.height;
+    let profileImageSize = 300;
+    let requestedImageSize: ImageSize = 512;
+    let padding = 50;
+    let backgroundColor = "#256f81";
+    let strokeColor = "#1b5260";
+
+    ctx.save();
+
+    ctx.fillStyle = backgroundColor;
+    ctx.fillRect(0, 0, w, h);
+
+    // Player Profile Icons
+
+    // Player 1 (Left)
+    const player_1_image = loadImage(
+      game.player_1.displayAvatarURL({
+        forceStatic: true,
+        extension: "png",
+        size: requestedImageSize,
+      }),
+    );
+
+    // Player 2 (Right)
+    const player_2_image = loadImage(
+      game.player_2.displayAvatarURL({
+        forceStatic: true,
+        extension: "png",
+        size: requestedImageSize,
+      }),
+    );
+    player_1_image.then((loadedImage) => {
+      player_2_image.then((loadedImage2) => {
+        let winnerImage = loadedImage;
+        let loserImage = loadedImage2;
+
+        let imageX = w / 2 - profileImageSize / 2;
+        let imageY = padding;
+
+        if (game.winner === game.player_2) {
+          winnerImage = loadedImage2;
+          loserImage = loadedImage;
+        }
+
+        ctx.save();
+        ctx.strokeStyle = strokeColor;
+
+        roundedImage(
+          ctx,
+          imageX,
+          imageY,
+          profileImageSize,
+          profileImageSize,
+          profileImageSize / 2, // Radius
+        ); // Left (Player 1)
+        ctx.stroke();
+        ctx.clip();
+        ctx.drawImage(
+          winnerImage,
+          imageX,
+          imageY,
+          profileImageSize,
+          profileImageSize,
+        );
+        ctx.restore();
+
+        ctx.font = '100px "Inter Black", "Noto Color Emoji"';
+        ctx.textAlign = "center";
+        ctx.fillStyle = "#ffffff";
+
+        ctx.fillText("🏆 Winner!", w / 2, padding * 4 + profileImageSize);
+
+        ctx.font = '84px "Inter SemiBold", "Noto Color Emoji"';
+        ctx.textAlign = "center";
+        ctx.fillStyle = "#ffffff";
+
+        ctx.fillText(game.winner.displayName, w / 2, h - padding * 1.5);
+
+        if (game.wager && game.wager > 0) {
+          ctx.save();
+          ctx.font = '84px "Inter Black", "Noto Color Emoji"';
+          ctx.textAlign = "left";
+
+          let pointString = `${game.wager.toLocaleString()}${config.emojis.points}`;
+
+          ctx.fillText(
+            `+${pointString}`,
+            imageX + padding * 3.5 + profileImageSize / 2,
+            imageY + profileImageSize / 2 + 33,
+          );
+          ctx.restore();
+
+          // Small Loser Display (Minus Points)
+          ctx.save();
+          ctx.strokeStyle = strokeColor;
+
+          let smallImageSize = profileImageSize / 2;
+          let smallImageY = imageY + profileImageSize / 2 - smallImageSize / 2;
+
+          roundedImage(
+            ctx,
+            padding,
+            smallImageY,
+            smallImageSize,
+            smallImageSize,
+            smallImageSize / 2, // Radius
+          );
+          ctx.stroke();
+          ctx.clip();
+          ctx.filter = "grayscale(100%)";
+          ctx.drawImage(
+            loserImage,
+            padding,
+            smallImageY,
+            smallImageSize,
+            smallImageSize,
+          );
+          ctx.restore();
+
+          ctx.font = '56px "Racer", "Inter Black", "Noto Color Emoji"';
+          ctx.textAlign = "left";
+          ctx.fillStyle = strokeColor;
+
+          ctx.fillText(
+            `-${pointString.replace(config.emojis.points, "").trim()}`,
+            padding * 1.5 + smallImageSize,
+            smallImageY + smallImageSize / 2 + 25,
+          );
+        }
+
+        let exported = canvas.toBuffer("image/png");
+        let attachmentName = `rps-game-${Date.now()}.png`;
+        const at = new AttachmentBuilder(exported, { name: attachmentName });
+        let attachmentUrl = `attachment://${attachmentName}`;
+        resolve({ attachment: at, url: attachmentUrl });
+      });
+    });
   });
 }
