@@ -3,6 +3,7 @@ import {
   AttachmentBuilder,
   ButtonInteraction,
   ButtonStyle,
+  codeBlock,
   ComponentType,
   MessageFlags,
   User,
@@ -89,6 +90,12 @@ export namespace RPS {
     PLAYER_2,
   }
 
+  export const ResultIcons = {
+    [RoundResult.PLAYER_1]: "🔴",
+    [RoundResult.PLAYER_2]: "🔵",
+    [RoundResult.TIE]: "➖",
+  };
+
   export interface Round {
     player_1_choice: Moves;
     player_2_choice: Moves;
@@ -153,6 +160,10 @@ async function buildRpsContainer(
     container.addMediaGallery([{ media: { url: headerImage.url } }]);
   if (winnerImage) {
     container.addMediaGallery([{ media: { url: winnerImage.url } }]);
+    container.addSeparator();
+    container.addTextDisplay(
+      `### Play History\n${codeBlock(`${game.rounds.map((r) => RPS.Icons[r.player_1_choice]).join(" ")} - ${game.winner && game.winner.id === game.player_1.id ? "🏆 " : ""}${game.player_1.displayName} 🔴 (${player1Score})\n\n${game.rounds.map((r) => RPS.ResultIcons[r.result]).join(" ")}\n\n${game.rounds.map((r) => RPS.Icons[r.player_2_choice]).join(" ")} - ${game.winner && game.winner.id === game.player_2.id ? "🏆 " : ""}${game.player_2.displayName} 🔵 (${player2Score})\n\n${game.rounds.map((r, i) => `R${i + 1}`).join(" ")}`)}`,
+    );
   } else if (!loading) {
     container.addTextDisplay(
       `-# Rock Paper Scissors • Started <t:${Math.floor(game.started_at / 1000)}:R>`,
