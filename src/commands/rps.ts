@@ -390,6 +390,11 @@ const RPSCommand: Command = {
           files: attachments,
         })
         .then(async (reply) => {
+          if (!interaction.replied && interaction.isRepliable())
+            await interaction.editReply({
+              content: `Please continue in the game embed: ${reply.url}`,
+            });
+
           setTimeout(async () => {
             const loaded = await buildRpsContainer(game, loadout);
             await reply.edit({
