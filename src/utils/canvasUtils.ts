@@ -538,7 +538,8 @@ export function rpsHeaderImage(
         ctx.save();
         ctx.strokeStyle = strokeColor;
 
-        if (!game.plays.player_1) ctx.filter = "grayscale(100%)";
+        if (!game.plays.player_1 && !game.winner)
+          ctx.filter = "grayscale(100%)";
 
         roundedImage(
           ctx,
@@ -563,7 +564,8 @@ export function rpsHeaderImage(
         ctx.save();
         ctx.strokeStyle = strokeColor;
 
-        if (!game.plays.player_2) ctx.filter = "grayscale(100%)";
+        if (!game.plays.player_2 && !game.winner)
+          ctx.filter = "grayscale(100%)";
 
         roundedImage(
           ctx,
