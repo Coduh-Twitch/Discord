@@ -44,6 +44,10 @@ export function i18n(p_key: string, ...sub: any[]) {
 
 const players: Map<string, string> = new Map<string, string>(); // Player1, Player2
 
+setInterval(() => {
+  players.clear();
+}, 300e3);
+
 export namespace RPS {
   export enum Moves {
     ROCK,
@@ -628,8 +632,8 @@ const RPSCommand: Command = {
                     game.rounds = newRounds;
 
                     if (game.winner) {
-                      players.delete(game.player_1_backup.id);
-                      players.delete(game.player_2_backup.id);
+                      players.delete(game.player_1.id);
+                      players.delete(game.player_1.id);
 
                       if (game.wager && game.wager > 0) {
                         await reply.reply({
