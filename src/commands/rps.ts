@@ -505,6 +505,11 @@ const RPSCommand: Command = {
               let randomPlay =
                 loadout[Math.floor(Math.random() * loadout.length)] ||
                 loadout[0];
+              for (var i = 0; i < 10; i++) {
+                randomPlay =
+                  loadout[Math.floor(Math.random() * loadout.length)] ||
+                  loadout[0];
+              }
               moves[client.user.id] = randomPlay;
               game.plays.player_2 = randomPlay;
             }
@@ -513,6 +518,11 @@ const RPSCommand: Command = {
               let randomPlay =
                 loadout[Math.floor(Math.random() * loadout.length)] ||
                 loadout[0];
+              for (var i = 0; i < 10; i++) {
+                randomPlay =
+                  loadout[Math.floor(Math.random() * loadout.length)] ||
+                  loadout[0];
+              }
               moves[client.user.id] = randomPlay;
               game.plays.player_1 = randomPlay;
             }
