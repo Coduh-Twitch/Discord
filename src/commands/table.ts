@@ -50,7 +50,7 @@ const TableCommand: Command = {
     const reporter = await lounge.getPlayerStatsByDiscordId(table.authorId);
     const container = new TMComponentBuilder();
     container.addTextDisplay(
-      `-# Table ID \`${table.id}\` - Updated <t:${Math.floor(new Date(table.verifiedOn).getTime() / 1000)}:R>\n## S${table.season} Tier ${table.tier} ${table.format}\n- **Reporter**: ${reporter.name}\n- **Table Created**: <t:${Math.floor(new Date(table.createdOn).getTime() / 1000)}:f>\n- **Table Verified**: <t:${Math.floor(new Date(table.verifiedOn).getTime() / 1000)}:f>`,
+      `-# Table ID \`${table.id}\` - ${table.verifiedOn ? `Updated <t:${Math.floor(new Date(table.verifiedOn).getTime() / 1000)}:R>` : "Not Verified Yet"}\n## S${table.season} Tier ${table.tier} ${table.format}\n- **Reporter**: ${reporter.name}\n- **Table Created**: <t:${Math.floor(new Date(table.createdOn).getTime() / 1000)}:f>\n- **Table Verified**: ${table.verifiedOn ? `<t:${Math.floor(new Date(table.verifiedOn).getTime() / 1000)}:f>` : "Not Verified Yet"}`,
     );
 
     let resultsStr = [];
@@ -70,10 +70,12 @@ const TableCommand: Command = {
       }
     }
 
-    container.addSeparator();
-    container.addTextDisplay(
-      `### MMR Changes\n\`\`\`diff\n${resultsStr.map((r, i) => `${r}${(i + 1) % teamSize === 0 && teamSize > 1 ? "\n" : ""}`).join("\n")}\`\`\``,
-    );
+    if (table.verifiedOn) {
+      container.addSeparator();
+      container.addTextDisplay(
+        `### MMR Changes\n\`\`\`diff\n${resultsStr.map((r, i) => `${r}${(i + 1) % teamSize === 0 && teamSize > 1 ? "\n" : ""}`).join("\n")}\`\`\``,
+      );
+    }
 
     container.addMediaGallery([{ media: { url: table.url } }]);
 
