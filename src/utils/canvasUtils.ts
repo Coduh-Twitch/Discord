@@ -45,7 +45,7 @@ function roundedImage(
   ctx.closePath();
 }
 
-function ordinal_suffix_of(i: number) {
+export function ordinal_suffix_of(i: number) {
   let j = i % 10,
     k = i % 100;
   if (j === 1 && k !== 11) {

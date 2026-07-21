@@ -103,6 +103,7 @@ import {
   getAllGuildReminders,
   nextReminderTimestamp,
 } from "./utils/reminderUtils";
+import Lounge from "./classes/Lounge";
 
 // throw new Error(generateDependencyReport());
 
@@ -154,6 +155,8 @@ export const authProvider = new StaticAuthProvider(
 );
 export const twitchApiClient = new ApiClient({ authProvider });
 export const twitchWs = new EventSubWsListener({ apiClient: twitchApiClient });
+
+export const lounge = new Lounge();
 
 export const TWITCH_CHATBOT_API_BASE = `${process.env.CHATBOT_BASE_URL}/api`;
 
