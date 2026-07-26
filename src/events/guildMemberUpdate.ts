@@ -81,7 +81,7 @@ export default {
         member.displayAvatarURL(),
       );
       con.addTextDisplay(
-        `${blockQuote(`${channelDescription(config.channels.streams, "Get a notification when Coduh goes live on [Twitch](https://twitch.tv/coduh)!")}\n${channelDescription(config.channels.daily_questions, "Participate in daily Would you Rather, Polls, and discussions!")}\n${channelDescription(config.channels.jackbox, "Codes are posted here during Jackbox streams")}\n${channelDescription(config.channels.wordle, "Compete in the daily Wordle with the community!")}\n${channelDescription(config.channels.movie_suggestions, "Suggest your favorite movies for our monthly movie nights!")}\n${channelDescription(config.channels.movie_polls, "Vote for the final choice in our monthly movie pick")}`)}`,
+        `${blockQuote(`${channelDescription(config.channels.streams, "Get a notification when Coduh goes live on [Twitch](https://twitch.tv/coduh)!")}\n${channelDescription(config.channels.daily_questions, "Participate in daily Would you Rather, Polls, and discussions!")}\n${channelDescription(config.channels.wordle, "Compete in the daily Wordle with the community!")}\n${channelDescription(config.channels.movie_suggestions, "Suggest your favorite movies for our monthly movie nights!")}\n${channelDescription(config.channels.movie_polls, "Vote for the final choice in our monthly movie pick")}`)}`,
       );
 
       // con.addSeparator(SeparatorSpacingSize.Small, false)
