@@ -113,7 +113,10 @@ export default {
 
     if (message.channelId === config.channels.jackbox) {
       const code = message.content.trim().toUpperCase();
-      if (code.length === 4 && message.author.id === config.coduh) {
+      if (
+        code.length === 4 &&
+        message.author.id === (dev_mode ? "334392742266535957" : config.coduh)
+      ) {
         message.react("🎮");
         let container = new TMComponentBuilder().setAccentColor(
           config.brand_color,
@@ -194,6 +197,14 @@ export default {
                         startInt &&
                         startInt.customId.includes("start-game")
                       ) {
+                        try {
+                          await channel.permissionOverwrites.edit(
+                            message.guildId,
+                            {
+                              ViewChannel: false,
+                            },
+                          );
+                        } catch (e) {}
                         if (mm.deletable) {
                           await mm.delete();
                           startInt.reply({
