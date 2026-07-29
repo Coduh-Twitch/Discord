@@ -500,6 +500,15 @@ async function initBot(c: Client) {
 
   c.user.setPresence({ activities: [act] });
 
+  console.log("Setting Bot Display Name Styles");
+  await c.rest.patch(`/guilds/${config.guild}/members/@me`, {
+    body: {
+      display_name_font_id: 8, // Pixelify
+      display_name_effect_id: 3,
+      display_name_colors: [0x1d737f],
+    },
+  });
+
   setInterval(() => {
     let random = Math.floor(Math.random() * activities.length);
 
@@ -923,6 +932,10 @@ client.on(Events.ClientReady, async (c) => {
     .channels.cache.get(config.channels.labs) as TextChannel;
   const startCon = new TMComponentBuilder().setAccentColor(config.brand_color);
   await c.application.commands.fetch();
+  let helpCommand = c.application.commands.cache.find((c) => c.name === "help");
+  await c.application.edit({
+    description: `4'2" is the new 6'\nTry ${helpCommand ? `</help:${helpCommand.id}>` : "`/help`"}!\ndumb stupid idiot bot\n\nhttps://github.com/Coduh-Twitch/Discord\nhttps://ducky.wiki`,
+  });
   startCon.addTextDisplay(
     `-# <t:${Math.floor(Date.now() / 1000)}:F>\n## Bot is Starting...\n> \`Env\` | ${dev_mode ? "DEVELOPMENT" : "PRODUCTION"}\n> \`Hostname\` | ${os.hostname()}\n> \`Twitch User\` | ${process.env.TWITCH_CHANNEL_NAME}\n> \`Polls Integration?\` | ${config.polls_enabled ? "Yes" : "No"}\n> \`Commands\` ${c.application.commands.cache.size}\n${c.application.commands.cache.map((cc) => `${cc.name}`).join(", ")}`,
   );
