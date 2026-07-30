@@ -12,6 +12,9 @@ import { userModel } from "../models/user";
 import { TMComponentBuilder } from "../classes/ComponentBuilder";
 import { appEmoji } from "../utils/emojiUtils";
 import config from "../config";
+import { db } from "../db";
+import { guilds } from "../db/schema";
+import { getDbGuild, updateDbGuild } from "../db/guilds";
 
 let rollers: Set<string> = new Set();
 
@@ -37,6 +40,8 @@ const SlotsCommand: Command = {
       });
       return;
     }
+    let dbGuild = getDbGuild(config.guild);
+
     await interaction.deferReply();
     let amount: number | string = interaction.options.getString("amount", true);
     if (!Number.isNaN(Number(amount))) amount = Number(amount);
@@ -130,7 +135,9 @@ const SlotsCommand: Command = {
           }
           if (jackpot) {
             console.log("JACKPOT");
-            winAmount = Math.floor(rollAmount * 1.33);
+            winAmount = Math.floor(
+              rollAmount * 1.33 + Math.floor(Math.random() * (rollAmount / 3)),
+            );
             container.addTextDisplay(
               `## ${await appEmoji(interaction.client, "yay")} You Won!\n${userMention(interaction.user.id)} won the jackpot and got **${winAmount.toLocaleString()}** ${config.point_name(true)}s! (+${(winAmount - rollAmount).toLocaleString()}) ${await appEmoji(interaction.client, "twerk")}`,
             );
@@ -177,6 +184,20 @@ const SlotsCommand: Command = {
     let interval: NodeJS.Timeout;
     interval = setInterval(async () => {
       if (rolls < 3) {
+        if (dbGuild.total_rolls + 1 >= dbGuild.next_jackpot) {
+          // rolls = 2;
+          if (rolls === 0) savedR1 = "coduhLove";
+          if (rolls === 1) savedR2 = "coduhLove";
+          if (rolls === 0) savedR3 = "coduhLove";
+          updateDbGuild(dbGuild.id, {
+            id: dbGuild.id,
+            next_jackpot: Math.max(
+              dbGuild.total_rolls + 11,
+              Math.round(Math.random() * dbGuild.total_rolls + 31),
+            ),
+          });
+        }
+
         let rand1 =
           savedR1 || emotes[Math.floor(Math.random() * emotes.length)];
         let rand2 =
@@ -185,8 +206,8 @@ const SlotsCommand: Command = {
           savedR3 || emotes[Math.floor(Math.random() * emotes.length)];
 
         if (rolls !== 0 && rand1 === rand3) {
-          savedR1 = rand1;
-          savedR3 = rand3;
+          if (!savedR1) savedR1 = rand1;
+          if (!savedR3) savedR3 = rand3;
         }
 
         await interaction.editReply({
@@ -203,6 +224,10 @@ const SlotsCommand: Command = {
         savedR2 = null;
         savedR3 = null;
         clearInterval(interval);
+        updateDbGuild(dbGuild.id, {
+          id: dbGuild.id,
+          total_rolls: dbGuild.total_rolls + 1,
+        });
       }
     }, 2e3);
   },

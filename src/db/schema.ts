@@ -14,6 +14,10 @@ export const guilds = sqliteTable("guilds", {
   discussion_channel_id: text("discussion_channel_id")
     .notNull()
     .default(config.channels.hangout),
+  total_rolls: integer("total_rolls").notNull().default(0),
+  next_jackpot: integer("next_jackpot")
+    .notNull()
+    .$defaultFn(() => Math.round(Math.random() * 50)),
 });
 
 export const questions = sqliteTable("questions", {
