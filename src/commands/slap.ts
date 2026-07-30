@@ -6,6 +6,7 @@ import {
 import { Command, CommandCategory } from "../classes/Command";
 import { TMComponentBuilder } from "../classes/ComponentBuilder";
 import config from "../config";
+import { client } from "..";
 
 const gifs = [
   "https://static2.klipy.com/ii/c3a19a0b747a76e98651f2b9a3cca5ff/ce/c7/QkTtxshF.gif",
@@ -36,7 +37,10 @@ const SlapCommand: Command = {
   category: CommandCategory.MISC,
   run: async (interaction) => {
     const user = interaction.options.getUser("victim", true);
-    const gif = gifs[Math.floor(Math.random() * gifs.length)] || gifs[0];
+    let gif = gifs[Math.floor(Math.random() * gifs.length)] || gifs[0];
+    if (user.id === client.user.id)
+      gif =
+        "https://static2.klipy.com/ii/4e7bea9f7a3371424e6c16ebc93252fe/32/3e/LuUJQLpNanVD.gif"; // kicking robot gif
     const phrase =
       phrases[Math.floor(Math.random() * phrases.length)] || phrases[0];
     const container = new TMComponentBuilder().setAccentColor(
