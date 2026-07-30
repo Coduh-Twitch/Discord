@@ -205,7 +205,7 @@ const SlotsCommand: Command = {
         let rand3 =
           savedR3 || emotes[Math.floor(Math.random() * emotes.length)];
 
-        if (rolls !== 0 && rand1 === rand3) {
+        if (rolls !== 3 && rand1 === rand3) {
           if (!savedR1) savedR1 = rand1;
           if (!savedR3) savedR3 = rand3;
         }
