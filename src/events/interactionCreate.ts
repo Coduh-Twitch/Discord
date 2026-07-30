@@ -53,6 +53,7 @@ export default {
       interaction: ChatInputCommandInteraction,
     ) {
       console.log("IS DEV MODE", dev_mode);
+      if (!interaction) return;
       if (interaction.commandName && interaction.commandName !== null) {
         let path = dev_mode
           ? join(
