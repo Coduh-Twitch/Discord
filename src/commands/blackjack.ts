@@ -136,10 +136,11 @@ const dealerSymbol = "♦️";
 const maxScore = 21;
 
 function total(hand: Cards[]): number {
-  hand = hand.sort((a, b) => a - b);
+  let nh = [...hand];
+  nh = nh.sort((a, b) => a - b);
   let tot = 0;
 
-  for (const card of hand) {
+  for (const card of nh) {
     const values: number[] = CardValues[card].sort((a, b) => b - a);
     let definiteValue = values.length === 1;
     if (definiteValue) {
