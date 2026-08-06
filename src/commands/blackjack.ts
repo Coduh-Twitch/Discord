@@ -43,10 +43,10 @@ enum GameResult {
 }
 
 const GameResultMessages = {
-  [GameResult.WIN]: `{user} won this one! {user} won {points} ${config.point_name(true, true)}{plural}!`,
+  [GameResult.WIN]: `{user} won this one! {user} won {points} ${config.point_name(true, true)}{plural}`,
   [GameResult.LOSS]: `{opponent} won this one! {user} lost {points} ${config.point_name(true, true)}{plural}`,
-  [GameResult.LOSS_EASY]: `Everyone loses! {user} got to keep {points} ${config.point_name(true, true)}{plural}!`,
-  [GameResult.DRAW]: `Nobody Won?! {user} didn't lose any ${config.point_name(true, true)}{plural}!`,
+  [GameResult.LOSS_EASY]: `Everyone loses! {user} got to keep {points} ${config.point_name(true, true)}{plural}`,
+  [GameResult.DRAW]: `Nobody Won?! {user} didn't lose any ${config.point_name(true, true)}{plural}`,
   [GameResult.NONE]: "",
 };
 
@@ -134,6 +134,7 @@ const cardSymbol = "🃏";
 const playerSymbol = "♥️";
 const dealerSymbol = "♦️";
 const maxScore = 21;
+const beta = false;
 
 function total(hand: Cards[]): number {
   let nh = [...hand];
@@ -175,6 +176,7 @@ async function distributePoints(
   game: Game,
   msg: Message | null = null,
 ): Promise<void> {
+  if (!beta) msg = null;
   console.log("POINT DISTRIBUTION", game.wager);
   if (game.wager > 0) {
     const dbUser = await userModel.findOne({ id: game.player_id });
@@ -193,7 +195,7 @@ async function distributePoints(
     if (game.result === GameResult.LOSS) {
       delta = "-";
       amount = wager;
-      if (!msg) dbUser.set("points", amount);
+      if (!msg) dbUser.set("points", dbUser.points - amount);
     }
 
     if (msg) {
@@ -224,7 +226,7 @@ async function buildGameContainer(game: Game): Promise<TMComponentBuilder> {
       resultMessage = `${resultMessage.split("! ")[0].trim()}!`;
     container
       .addTextDisplay(
-        `-# ${cardSymbol} ${userMention(game.player_id)}'s Blackjack **[BETA]** Game${game.wager > 0 ? ` • ${game.wager.toLocaleString()} ${config.point_name(false, true)}s` : ""} • Started <t:${Math.floor(game.started_at / 1000)}:R>`,
+        `${game.result !== GameResult.NONE || game.surrendered ? "### " : "-# "} ${cardSymbol} ${userMention(game.player_id)}'s Blackjack${beta ? ` **[BETA]** ` : " "}Game${game.wager > 0 ? ` • ${config.emojis.points} **${game.wager.toLocaleString()} ${config.point_name(false, true)} Wager**` : ""}${game.result !== GameResult.NONE && !game.surrendered ? `\n-# Started <t:${Math.floor(game.started_at / 1000)}:R> • Decided <t:${Math.floor(Date.now() / 1000)}:R>` : game.surrendered ? `\n-# Started <t:${Math.floor(game.started_at / 1000)}:R> • **__Surrendered__** <t:${Math.floor(Date.now() / 1000)}:R>` : ` • Started <t:${Math.floor(game.started_at / 1000)}:R>`}`,
       )
       .addSeparator();
 
@@ -272,24 +274,34 @@ async function buildGameContainer(game: Game): Promise<TMComponentBuilder> {
         ).setDisabled(game.player_hand.length > 2),
       ]);
       container.addSeparator();
-      container.addTextDisplay(`-# ${cardSymbol} **${game.deck.length}**`);
+      container.addTextDisplay(
+        `-# ${cardSymbol} **${game.deck.length}** Card${game.deck.length === 1 ? "" : "s"} Remaining${game.deck.length === 48 ? " (Starting Hand)" : ""}`,
+      );
     } else if (!game.surrendered) {
       container.addSeparator();
-      container.addTextDisplay(resultMessage);
+      let resultHeading = `${resultMessage.split("! ")[0].trim()}!`;
+      let resultSubheading = `${resultMessage.split("! ")[1].trim()}`;
+      container.addTextDisplay(
+        game.wager > 0
+          ? `### ${resultHeading}\n${resultSubheading}`
+          : `### ${resultMessage}`,
+      );
     } else {
       container.addSeparator();
       container.addTextDisplay(
-        `No Contest! ${userMention(game.player_id)} surrendered the game${game.wager > 0 ? `, and didn't lose any ${config.point_name(true, true)}s.` : "."}`,
+        `### No Contest!\n${userMention(game.player_id)} surrendered the game${game.wager > 0 ? `, and didn't lose any ${config.point_name(true, true)}s.` : "."}`,
       );
     }
   } else {
     container.addTextDisplay(`-# ${cardSymbol} Shuffling the deck...`);
   }
 
-  container.addSeparator();
-  container.addTextDisplay(
-    `-# Blackjack is currently in beta. Please report any bugs to **ducky**. **${config.point_name(false, true)} wagers are for simulation purposes only during the beta. __You will not lose or win any points, bets are randomized.__**`,
-  );
+  if (beta) {
+    container.addSeparator();
+    container.addTextDisplay(
+      `-# Blackjack is currently in beta. Please report any bugs to **ducky**. **${config.point_name(false, true)} wagers are for simulation purposes only during the beta. __You will not lose or win any points, bets are randomized.__**`,
+    );
+  }
 
   return container;
 }
@@ -344,13 +356,13 @@ const BlackjackCommand: Command = {
   description: "Play Blackjack!",
   category: CommandCategory.ECONOMY,
   options: [
-    // {
-    //   name: "wager-amount",
-    //   description: `Would you like to put up ${config.point_name(true, true)}s for this game?`,
-    //   type: ApplicationCommandOptionType.Integer,
-    //   minValue: 2,
-    //   required: false,
-    // },
+    {
+      name: "wager-amount",
+      description: `Would you like to put up ${config.point_name(true, true)}s for this game?`,
+      type: ApplicationCommandOptionType.Integer,
+      minValue: 2,
+      required: false,
+    },
   ],
   run: async (interaction) => {
     if (players.has(interaction.user.id))
@@ -358,8 +370,7 @@ const BlackjackCommand: Command = {
         flags: [MessageFlags.Ephemeral],
         content: `${await appEmoji(client, "nono")} You are already in a Blackjack game!`,
       });
-    // interaction.options.getInteger("wager-amount", false) ||
-    let wager = 0;
+    let wager = interaction.options.getInteger("wager-amount", false) || 0;
     const dbUser = await userModel.findOne({ id: interaction.user.id });
     const userPoints = dbUser?.points || 0;
 
@@ -374,7 +385,7 @@ const BlackjackCommand: Command = {
         content: `${await appEmoji(client, "nono")} The maximum bet for Blackjack is 10,000 ${config.point_name(true, true)}s`,
       });
 
-    wager = Math.round(Math.random() * 3000);
+    if (beta) wager = Math.round(Math.random() * 3000);
 
     let deck = buildDeck();
     let { card: playerStartingCard1, newDeck } = drawCard(deck);
@@ -430,7 +441,7 @@ const BlackjackCommand: Command = {
 
     if (game.result !== GameResult.NONE) {
       players.delete(game.player_id);
-      await distributePoints(game, res.resource.message);
+      await distributePoints(game, beta ? res.resource.message : null);
     }
 
     setTimeout(async () => {
@@ -481,7 +492,7 @@ const BlackjackCommand: Command = {
 
         if (game.result !== GameResult.NONE) {
           players.delete(game.player_id);
-          await distributePoints(game, res.resource.message);
+          await distributePoints(game, beta ? res.resource.message : null);
         }
 
         const container = await buildGameContainer(game);
@@ -517,7 +528,7 @@ const BlackjackCommand: Command = {
 
         if ((game.result as any as GameResult) !== GameResult.NONE) {
           players.delete(game.player_id);
-          await distributePoints(game, res.resource.message);
+          await distributePoints(game, beta ? res.resource.message : null);
         }
 
         const container = await buildGameContainer(game);
@@ -528,6 +539,7 @@ const BlackjackCommand: Command = {
       } else if (customId.action.includes("surrender")) {
         game.surrendered = true;
         const container = await buildGameContainer(game);
+        players.delete(interaction.user.id);
 
         await res.resource.message.edit({
           components: [container.buildContainer()],
