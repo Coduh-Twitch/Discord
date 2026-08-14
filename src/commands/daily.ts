@@ -552,7 +552,9 @@ async function updatePollMessage(
         if (
           context &&
           context.trim().length > 0 &&
-          dbQuestion.question.active
+          dbQuestion.question.active &&
+          senderId !== null &&
+          senderId !== undefined
         ) {
           wywContainer.addSeparator();
           wywContainer.addTextDisplay(
