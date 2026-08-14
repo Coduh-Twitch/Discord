@@ -72,7 +72,7 @@ export const getDailyQuestion = (
       .all() || [];
 
   return {
-    question,
+    question: question,
     answers: answersArr,
   };
 };
