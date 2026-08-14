@@ -18,6 +18,7 @@ import {
   SeparatorBuilder,
   SeparatorSpacingSize,
   TextChannel,
+  TextInputAssertions,
   TextInputBuilder,
   TextInputStyle,
   ThumbnailComponent,
@@ -98,6 +99,7 @@ export function initDailyEvents() {
         mode,
         question.question_text,
         questionsArr,
+        question?.context || null,
       );
     },
   );
@@ -124,6 +126,7 @@ export function initDailyEvents() {
         mode,
         question.question_text,
         questionsArr,
+        question?.context || null,
       );
     },
   );
@@ -135,6 +138,7 @@ async function updatePollMessage(
   mode: QuestionModes,
   prompt: string,
   questions: Question[],
+  context: string | null,
 ): Promise<boolean> {
   try {
     let dbGuild = getDbGuild(guildId);
@@ -160,6 +164,8 @@ async function updatePollMessage(
           question_text: prompt,
           expires_at: midnight.getTime(),
           id: questionId,
+          context: context,
+          creator_id: senderId,
           mode,
         },
         questions.map((q) => ({
@@ -169,6 +175,9 @@ async function updatePollMessage(
           votes: 0,
         })),
       );
+
+    if (dbQuestion.question?.creator_id)
+      senderId = dbQuestion.question.creator_id;
 
     await (questionChannel as TextChannel).messages.fetch({ cache: true });
     let questionMessage: Message<boolean> | null =
@@ -540,6 +549,16 @@ async function updatePollMessage(
           { media: { url: `attachment://${image.attachment.name}` } },
         ]);
 
+        if (
+          context &&
+          context.trim().length > 0 &&
+          dbQuestion.question.active
+        ) {
+          wywContainer.addSeparator();
+          wywContainer.addTextDisplay(
+            `### ${await appEmoji(client, `nerd`)} Context from ${userMention(senderId)}\n${blockQuote(context)}`,
+          );
+        }
         wywContainer.addSeparator();
 
         if (dbQuestion.question.active) {
@@ -636,6 +655,7 @@ async function sendDailyQuestion(
   senderId: string,
   mode: QuestionModes,
   questions: Question[],
+  context: string | null,
   message: string = "NO MESSAGE",
 ): Promise<boolean> {
   console.log("MESSAGE", message);
@@ -668,6 +688,8 @@ async function sendDailyQuestion(
         question_text: promptQuestion.text,
         expires_at: midnight.getTime(),
         id: questionId,
+        context: context,
+        creator_id: senderId,
         mode,
       },
       questions.map((q) => ({
@@ -684,6 +706,7 @@ async function sendDailyQuestion(
       mode,
       promptQuestion.text,
       questions,
+      context,
     );
 
     return true;
@@ -972,6 +995,24 @@ const DailyCommand: Command = {
             }
           }
 
+          if (mode === QuestionModes.WOULD_YOU_RATHER) {
+            const contextLabel = new LabelBuilder()
+              .setLabel(`Context`)
+              .setDescription(
+                `Optionally add context, such as "You can not wish for more wishes" to this question.`,
+              );
+            const contextInput = new TextInputBuilder()
+              .setCustomId(generateCustomId(interaction, `modal-context`))
+              .setMaxLength(100)
+              .setRequired(false);
+            contextInput.setStyle(TextInputStyle.Paragraph);
+            contextInput.setPlaceholder("Enter context...");
+
+            contextLabel.setTextInputComponent(contextInput);
+
+            modal.addLabelComponents(contextLabel);
+          }
+
           let modalInt: ModalSubmitInteraction | null;
           await confirmInt.showModal(modal, { withResponse: true });
           let followModalContainer = new TMComponentBuilder()
@@ -1004,19 +1045,32 @@ const DailyCommand: Command = {
                   });
 
                 let i = 0;
-                let questions: Question[] = fields.fields.map((v, k, c) => {
-                  i++;
-                  let textValue = modalInt.fields.getTextInputValue(v.customId);
-                  let toReturn: Question = {
-                    index: i,
-                    text: textValue,
-                  };
-                  if (mode === QuestionModes.DISCUSSION)
-                    toReturn.prompt = textValue;
-                  if (mode === QuestionModes.CLASSIC && i === 1)
-                    toReturn.prompt = textValue;
-                  return toReturn;
-                });
+                let questions: Question[] = fields.fields
+                  .filter((f) => !f.customId.includes("context"))
+                  .map((v, k, c) => {
+                    i++;
+                    let textValue = modalInt.fields.getTextInputValue(
+                      v.customId,
+                    );
+                    let toReturn: Question = {
+                      index: i,
+                      text: textValue,
+                    };
+                    if (mode === QuestionModes.DISCUSSION)
+                      toReturn.prompt = textValue;
+                    if (mode === QuestionModes.CLASSIC && i === 1)
+                      toReturn.prompt = textValue;
+                    return toReturn;
+                  });
+
+                let contextField = fields.fields.find((f) =>
+                  f.customId.includes("context"),
+                );
+                let context = contextField
+                  ? modalInt.fields.getTextInputValue(contextField.customId)
+                  : null;
+                if (context && context.trim().length <= 0) context = null;
+                console.log("context", `"${context}"`);
 
                 console.log("modal submit | mode", mode);
 
@@ -1083,6 +1137,7 @@ const DailyCommand: Command = {
                       interaction.user.id,
                       mode,
                       questions,
+                      null,
                     );
                   } else if (
                     moreQuestionsInt.customId.includes("confirm-more-questions")
@@ -1152,6 +1207,7 @@ const DailyCommand: Command = {
                             moreQuestionsModal.user.id,
                             mode,
                             questions,
+                            null,
                             "more questions modal had 0 fields",
                           );
 
@@ -1200,6 +1256,7 @@ const DailyCommand: Command = {
                             moreQuestionsModal.user.id,
                             mode,
                             questions,
+                            null,
                             "more questions final",
                           );
                         } catch (err) {
@@ -1223,6 +1280,7 @@ const DailyCommand: Command = {
                             interaction.user.id,
                             mode,
                             questions,
+                            null,
                             "more modal catch",
                           );
                         } catch (e) {}
@@ -1247,6 +1305,7 @@ const DailyCommand: Command = {
                     interaction.user.id,
                     mode,
                     questions,
+                    context,
                     "file final",
                   );
                 }

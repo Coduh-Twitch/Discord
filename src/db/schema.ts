@@ -32,6 +32,8 @@ export const questions = sqliteTable("questions", {
   expires_at: integer("expires_at").notNull(),
   question_text: text("question_text").notNull(),
   mode: text("mode").notNull(),
+  creator_id: text("creator_id").default(null),
+  context: text("context").default(null),
 });
 
 export const answers = sqliteTable("answers", {
