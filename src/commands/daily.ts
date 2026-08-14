@@ -176,7 +176,10 @@ async function updatePollMessage(
         })),
       );
 
-    if (dbQuestion.question?.creator_id)
+    if (
+      dbQuestion.question?.creator_id &&
+      dbQuestion.question.creator_id !== "null"
+    )
       senderId = dbQuestion.question.creator_id;
 
     await (questionChannel as TextChannel).messages.fetch({ cache: true });
