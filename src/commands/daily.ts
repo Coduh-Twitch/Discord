@@ -528,6 +528,7 @@ async function updatePollMessage(
         }
       }
       case QuestionModes.WOULD_YOU_RATHER: {
+        console.log("DB QUESTION", dbQuestion.question);
         console.log("OPTIONS", questions);
         let dbAnswers = getDailyQuestion(dbQuestion.question.guild_id).answers;
         const image = await wouldYouRatherImage(
