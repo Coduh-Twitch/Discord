@@ -551,8 +551,8 @@ async function updatePollMessage(
         ]);
 
         if (
-          dbQuestion.question?.context &&
           context &&
+          context !== "null" &&
           context.trim().length > 0 &&
           dbQuestion.question.active &&
           senderId !== null &&
