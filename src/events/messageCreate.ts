@@ -37,7 +37,14 @@ import { start } from "node:repl";
 export default {
   enabled: true,
   run: async (message: Message) => {
-    if (message.cleanContent.trim() === "67") return await message.delete();
+    if (message.cleanContent.trim() === "67") {
+      message.reply("stop it. just stop.").then(async (m) => {
+        setTimeout(async () => {
+          await m.delete();
+        }, 5e3)
+      })
+      return await message.delete();
+    }
     if (message.system) {
       console.log("SYSTEM MESSAGE", message);
       // message.channel.isSendable() ? message.channel.send({embeds: [...message.embeds]}) : {};
