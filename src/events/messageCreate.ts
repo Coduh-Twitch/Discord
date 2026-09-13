@@ -37,6 +37,7 @@ import { start } from "node:repl";
 export default {
   enabled: true,
   run: async (message: Message) => {
+    if (message.cleanContent.trim() === "67") return await message.delete();
     if (message.system) {
       console.log("SYSTEM MESSAGE", message);
       // message.channel.isSendable() ? message.channel.send({embeds: [...message.embeds]}) : {};
