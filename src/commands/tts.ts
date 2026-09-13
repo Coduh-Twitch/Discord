@@ -44,7 +44,7 @@ async function say(interaction: ChatInputCommandInteraction, utterance: Utteranc
             lang: "en-US",
             outputFormat: "webm-24khz-16bit-mono-opus",
         })
-        
+
         return await tts.ttsPromise(voiceHost && voiceHost.id !== user.id ? `${user.username} said: ${utterance.content}` : utterance.content, utterancePath).then(v => {
             let res = createAudioResource(utterancePath, { inputType: StreamType.WebmOpus, inlineVolume: true });
             if (res.volume) res.volume.setVolume(1);
@@ -143,7 +143,7 @@ const TTSCommand: Command = {
                     adapterCreator: interaction.guild.voiceAdapterCreator,
                     guildId: interaction.guildId,
                     channelId: m.voice.channelId,
-                    selfDeaf: false,
+                    selfDeaf: true,
                     selfMute: false,
                 })
 
