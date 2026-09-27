@@ -498,73 +498,73 @@ async function initBot(c: Client) {
     });
   }
 
-  async function scheduleInterval() {
-    try {
-      throw new Error("Schedule Feature Disabled");
-      const dbGuild = getDbGuild(config.guild);
-      const guild = client.guilds.cache.get(dbGuild.id);
-      const scheduleChannel: TextChannel = guild.channels.cache.get(config.channels.schedule) as TextChannel;
-      const scheduleMessage = dbGuild.schedule_message_id ? await scheduleChannel.messages.fetch(dbGuild.schedule_message_id) : null;
+  // async function scheduleInterval() {
+  //   try {
+  //     throw new Error("Schedule Feature Disabled");
+  //     const dbGuild = getDbGuild(config.guild);
+  //     const guild = client.guilds.cache.get(dbGuild.id);
+  //     const scheduleChannel: TextChannel = guild.channels.cache.get(config.channels.schedule) as TextChannel;
+  //     const scheduleMessage = dbGuild.schedule_message_id ? await scheduleChannel.messages.fetch(dbGuild.schedule_message_id) : null;
 
-      // const scheduleStorePath = join(process.cwd(), "schedule.json");
+  //     // const scheduleStorePath = join(process.cwd(), "schedule.json");
 
-      const broadcaster = await twitchApiClient.users.getUserByName(process.env.TWITCH_CHANNEL_NAME)
-      if (broadcaster) {
-        const schedule = await twitchApiClient.schedule.getSchedule(broadcaster.id);
+  //     const broadcaster = await twitchApiClient.users.getUserByName(process.env.TWITCH_CHANNEL_NAME)
+  //     if (broadcaster) {
+  //       const schedule = await twitchApiClient.schedule.getSchedule(broadcaster.id);
 
-        if (schedule.data && schedule.data.segments.length > 0) {
-          const segments = schedule.data.segments;
+  //       if (schedule.data && schedule.data.segments.length > 0) {
+  //         const segments = schedule.data.segments;
 
-          const categories: string[] = [];
-          for (const segment of segments) {
-            if (!categories.includes(segment.categoryName)) categories.push(segment.categoryName);
-          }
+  //         const categories: string[] = [];
+  //         for (const segment of segments) {
+  //           if (!categories.includes(segment.categoryName)) categories.push(segment.categoryName);
+  //         }
 
-          const container = new TMComponentBuilder().setAccentColor(config.brand_color);
+  //         const container = new TMComponentBuilder().setAccentColor(config.brand_color);
 
-          container.addTextDisplay(`# Weekly Stream Schedule\n-# This schedule is subject to change at any point, god forbid Coduh be on time\n\n-# Usually, coduh streams Thursday-Sunday at or after 7:30pm PST | 10:30pm EST`);
-          container.addSeparator();
-          container.addTextDisplay(`## This Week's Streams\n-# Timestamps will adjust to your time zone automatically.`)
-          container.addSeparator(SeparatorSpacingSize.Small, false);
+  //         container.addTextDisplay(`# Weekly Stream Schedule\n-# This schedule is subject to change at any point, god forbid Coduh be on time\n\n-# Usually, coduh streams Thursday-Sunday at or after 7:30pm PST | 10:30pm EST`);
+  //         container.addSeparator();
+  //         container.addTextDisplay(`## This Week's Streams\n-# Timestamps will adjust to your time zone automatically.`)
+  //         container.addSeparator(SeparatorSpacingSize.Small, false);
 
-          for (const categoryName of categories) {
-            const streamsPerCategory = 2;
+  //         for (const categoryName of categories) {
+  //           const streamsPerCategory = 2;
 
-            const seg = segments.filter(s => s.categoryName === categoryName).sort((a, b) => a.startDate.getTime() - b.startDate.getTime()).slice(0,streamsPerCategory);
-            container.addTextDisplay(`### ${categoryName}\n${seg.map(s => {
-              const length = Math.floor((((s.endDate.getTime() - s.startDate.getTime()) / 1000) / 60) / 60);
+  //           const seg = segments.filter(s => s.categoryName === categoryName).sort((a, b) => a.startDate.getTime() - b.startDate.getTime()).slice(0,streamsPerCategory);
+  //           container.addTextDisplay(`### ${categoryName}\n${seg.map(s => {
+  //             const length = Math.floor((((s.endDate.getTime() - s.startDate.getTime()) / 1000) / 60) / 60);
 
-              return `> - <t:${Math.floor(s.startDate.getTime() / 1000)}:F> **for ~${length} hour${length === 1 ? "" : "s"}**`;
-            }).join("\n")}`);
-          }
+  //             return `> - <t:${Math.floor(s.startDate.getTime() / 1000)}:F> **for ~${length} hour${length === 1 ? "" : "s"}**`;
+  //           }).join("\n")}`);
+  //         }
 
-          container.addSeparator();
-          container.addTextDisplay(`-# **Stream Notifications**: ${channelMention(config.channels.streams)}\n-# **VODS**: [YouTube](<https://youtube.com/@CoduhVODS>) | [Twitch](<https://www.twitch.tv/coduh/videos?filter=collections>)`)
+  //         container.addSeparator();
+  //         container.addTextDisplay(`-# **Stream Notifications**: ${channelMention(config.channels.streams)}\n-# **VODS**: [YouTube](<https://youtube.com/@CoduhVODS>) | [Twitch](<https://www.twitch.tv/coduh/videos?filter=collections>)`)
 
-          if (scheduleMessage) {
-            await scheduleMessage.edit({ flags: [MessageFlags.IsComponentsV2], components: [container.buildContainer()] });
-          } else {
-            scheduleChannel.messages.cache.forEach(async m => { if (m.deletable) await m.delete() });
-            scheduleChannel.send({
-              flags: [MessageFlags.IsComponentsV2],
-              components: [container.buildContainer()]
-            }).then(m => {
-              updateDbGuild(dbGuild.id, { id: dbGuild.id, schedule_message_id: m.id });
-            })
-          }
-        }
-      }
-    } catch (e) {
-      console.log("schedule interval failed", e)
-    }
-  }
+  //         if (scheduleMessage) {
+  //           await scheduleMessage.edit({ flags: [MessageFlags.IsComponentsV2], components: [container.buildContainer()] });
+  //         } else {
+  //           scheduleChannel.messages.cache.forEach(async m => { if (m.deletable) await m.delete() });
+  //           scheduleChannel.send({
+  //             flags: [MessageFlags.IsComponentsV2],
+  //             components: [container.buildContainer()]
+  //           }).then(m => {
+  //             updateDbGuild(dbGuild.id, { id: dbGuild.id, schedule_message_id: m.id });
+  //           })
+  //         }
+  //       }
+  //     }
+  //   } catch (e) {
+  //     console.log("schedule interval failed", e)
+  //   }
+  // }
 
-  await scheduleInterval();
+  // await scheduleInterval();
 
-  // Schedule Interval
-  setInterval(async () => {
-    await scheduleInterval();
-  }, 3e5); // 5 minutes
+  // // Schedule Interval
+  // setInterval(async () => {
+  //   await scheduleInterval();
+  // }, 3e5); // 5 minutes
 
   // if (filteredCmds.length > 0) {
   // console.log(`Starting Twitch cmd check interval`)
