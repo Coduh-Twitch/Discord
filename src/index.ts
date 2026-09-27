@@ -66,7 +66,7 @@ import {
   HelixCustomRewardRedemption,
   HelixStream,
 } from "@twurple/api";
-import { StaticAuthProvider } from "@twurple/auth";
+import { RefreshingAuthProvider, StaticAuthProvider } from "@twurple/auth";
 import { post } from "axios";
 import mongoose from "mongoose";
 import { calculateRequiredXP, removeXP } from "./utils/xpUtils";
@@ -93,9 +93,10 @@ import {
   getAllVoters,
   getDailyQuestion,
   getDbGuild,
+  updateDbGuild,
 } from "./db/guilds";
 import { initDailyEvents, modes, QuestionModes } from "./commands/daily";
-import { answers, questions, reminders, voters } from "./db/schema";
+import { answers, authorizations, questions, reminders, voters } from "./db/schema";
 import { createCustomId, parseCustomId } from "./utils/customIdUtils";
 import { randomUUID } from "crypto";
 import {
@@ -104,6 +105,7 @@ import {
   nextReminderTimestamp,
 } from "./utils/reminderUtils";
 import Lounge from "./classes/Lounge";
+import { ensureAuth, getAuth } from "./db/auth";
 
 // throw new Error(generateDependencyReport());
 
@@ -144,17 +146,47 @@ let sevenWarnings: Map<string, boolean> = new Map();
 
 export const dev_mode = process.argv.includes("-dev");
 // export const dev_mode = os.hostname() !== "duckyserver";
-console.log("IS DEV MODE");
 // export const dev_mode = false;
 // export const desiredExt = ".ts"
 export const desiredExt = dev_mode ? ".ts" : ".js";
 
-export const authProvider = new StaticAuthProvider(
-  process.env.TWITCH_CLIENT_ID,
-  process.env.TWITCH_ACCESS_TOKEN,
+export const authProvider = new RefreshingAuthProvider(
+  {
+    clientId: process.env.TWITCH_CLIENT_ID,
+    clientSecret: process.env.TWITCH_CLIENT_SECRET,
+    appImpliedScopes: ["channel:read:polls", "channel:manage:polls"]
+  }
 );
 export const twitchApiClient = new ApiClient({ authProvider });
 export const twitchWs = new EventSubWsListener({ apiClient: twitchApiClient });
+
+async function injectInitialAuth() {
+  const apiUser = await twitchApiClient.users.getUserByName(process.env.TWITCH_CHANNEL_NAME);
+  if (apiUser) {
+    let data = getAuth(apiUser.id);
+
+    if (!data) {
+      data = {
+        userId: apiUser.id,
+        accessToken: process.env.INITIAL_ACCESS_TOKEN,
+        refreshToken: process.env.INITIAL_REFRESH_TOKEN,
+        expiresIn: 0,
+        obtainmentTimestamp: 0
+      }
+    }
+
+    await authProvider.addUserForToken(data)
+    ensureAuth(data);
+  }
+}
+
+// injectInitialAuth()
+
+
+authProvider.onRefresh((userId, data) => {
+  console.log(`Refreshing auth for user ${userId}`, {...data, accessToken: "redacted", refreshToken: "redacted"});
+  ensureAuth({ userId, accessToken: data.accessToken, expiresIn: data.expiresIn, obtainmentTimestamp: data.obtainmentTimestamp, refreshToken: data.refreshToken });
+})
 
 export const lounge = new Lounge();
 
@@ -172,6 +204,10 @@ twitchWs.onUserSocketConnect((userId) => {
 twitchWs.onSubscriptionCreateSuccess((subscription, apiSubscription) => {
   console.log(`Subscribed to event ${subscription.id}`);
 });
+
+twitchWs.onSubscriptionCreateFailure((subscription, error) => {
+  console.log(`failed to subscribe to ${subscription.id}`, error.message)
+})
 
 export const reply = async (
   interaction: ChatInputCommandInteraction,
@@ -294,7 +330,6 @@ async function loadEvents(c: Client) {
     .forEach((file) => {
       const event = require(join(__dirname, "events", file)).default;
       const eventName = file.split(desiredExt)[0];
-      console.log(eventName, event);
       if (!event)
         return console.log(
           `Didn't load event file ${file} because it's not formatted correctly.`,
@@ -462,6 +497,75 @@ async function initBot(c: Client) {
       components: [honeypotContainer.buildContainer()],
     });
   }
+
+  async function scheduleInterval() {
+    try {
+      throw new Error("Schedule Feature Disabled");
+      const dbGuild = getDbGuild(config.guild);
+      const guild = client.guilds.cache.get(dbGuild.id);
+      const scheduleChannel: TextChannel = guild.channels.cache.get(config.channels.schedule) as TextChannel;
+      const scheduleMessage = dbGuild.schedule_message_id ? await scheduleChannel.messages.fetch(dbGuild.schedule_message_id) : null;
+
+      // const scheduleStorePath = join(process.cwd(), "schedule.json");
+
+      const broadcaster = await twitchApiClient.users.getUserByName(process.env.TWITCH_CHANNEL_NAME)
+      if (broadcaster) {
+        const schedule = await twitchApiClient.schedule.getSchedule(broadcaster.id);
+
+        if (schedule.data && schedule.data.segments.length > 0) {
+          const segments = schedule.data.segments;
+
+          const categories: string[] = [];
+          for (const segment of segments) {
+            if (!categories.includes(segment.categoryName)) categories.push(segment.categoryName);
+          }
+
+          const container = new TMComponentBuilder().setAccentColor(config.brand_color);
+
+          container.addTextDisplay(`# Weekly Stream Schedule\n-# This schedule is subject to change at any point, god forbid Coduh be on time\n\n-# Usually, coduh streams Thursday-Sunday at or after 7:30pm PST | 10:30pm EST`);
+          container.addSeparator();
+          container.addTextDisplay(`## This Week's Streams\n-# Timestamps will adjust to your time zone automatically.`)
+          container.addSeparator(SeparatorSpacingSize.Small, false);
+
+          for (const categoryName of categories) {
+            const streamsPerCategory = 2;
+
+            const seg = segments.filter(s => s.categoryName === categoryName).sort((a, b) => a.startDate.getTime() - b.startDate.getTime()).slice(0,streamsPerCategory);
+            container.addTextDisplay(`### ${categoryName}\n${seg.map(s => {
+              const length = Math.floor((((s.endDate.getTime() - s.startDate.getTime()) / 1000) / 60) / 60);
+
+              return `> - <t:${Math.floor(s.startDate.getTime() / 1000)}:F> **for ~${length} hour${length === 1 ? "" : "s"}**`;
+            }).join("\n")}`);
+          }
+
+          container.addSeparator();
+          container.addTextDisplay(`-# **Stream Notifications**: ${channelMention(config.channels.streams)}\n-# **VODS**: [YouTube](<https://youtube.com/@CoduhVODS>) | [Twitch](<https://www.twitch.tv/coduh/videos?filter=collections>)`)
+
+          if (scheduleMessage) {
+            await scheduleMessage.edit({ flags: [MessageFlags.IsComponentsV2], components: [container.buildContainer()] });
+          } else {
+            scheduleChannel.messages.cache.forEach(async m => { if (m.deletable) await m.delete() });
+            scheduleChannel.send({
+              flags: [MessageFlags.IsComponentsV2],
+              components: [container.buildContainer()]
+            }).then(m => {
+              updateDbGuild(dbGuild.id, { id: dbGuild.id, schedule_message_id: m.id });
+            })
+          }
+        }
+      }
+    } catch (e) {
+      console.log("schedule interval failed", e)
+    }
+  }
+
+  await scheduleInterval();
+
+  // Schedule Interval
+  setInterval(async () => {
+    await scheduleInterval();
+  }, 3e5); // 5 minutes
+
   // if (filteredCmds.length > 0) {
   // console.log(`Starting Twitch cmd check interval`)
   // await setInterval(async () => {
@@ -691,7 +795,7 @@ async function initBot(c: Client) {
     }
   });
 
-  twitchWs.onChannelPollBegin(user.id, (e) => {
+  if(config.polls_enabled) twitchWs.onChannelPollBegin(user.id, (e) => {
     if (
       !e.isBitsVotingEnabled &&
       !e.isChannelPointsVotingEnabled &&
@@ -737,7 +841,7 @@ async function initBot(c: Client) {
     }
   });
 
-  twitchWs.onChannelPollEnd(user.id, async (e) => {
+  if(config.polls_enabled) twitchWs.onChannelPollEnd(user.id, async (e) => {
     if (
       !e.isBitsVotingEnabled &&
       !e.isChannelPointsVotingEnabled &&
@@ -926,6 +1030,7 @@ async function initBot(c: Client) {
 }
 
 client.on(Events.ClientReady, async (c) => {
+  await injectInitialAuth();
   await initBot(c);
   const labs = c.guilds.cache
     .get(config.guild)
@@ -1302,9 +1407,6 @@ export async function logEvent(
     case Events.AutoModerationRuleUpdate: {
       let old_rule: AutoModerationRule = args["old_rule"];
       let new_rule: AutoModerationRule = args["new_rule"];
-
-      console.log("OLD", old_rule);
-      console.log("NEW", new_rule);
 
       if (!old_rule) return;
 

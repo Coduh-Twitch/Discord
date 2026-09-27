@@ -2,6 +2,14 @@ import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import config from "../config";
 import { randomUUID } from "node:crypto";
 
+export const authorizations = sqliteTable("authorizations", {
+  accessToken: text().notNull().primaryKey(),
+  refreshToken: text().notNull(),
+  expiresIn: integer().notNull(),
+  obtainmentTimestamp: integer().notNull(),
+  userId: text().notNull()
+})
+
 export const guilds = sqliteTable("guilds", {
   id: text("id").notNull().primaryKey(),
   last_daily_question: integer("last_daily_question")
@@ -18,6 +26,7 @@ export const guilds = sqliteTable("guilds", {
   next_jackpot: integer("next_jackpot")
     .notNull()
     .$defaultFn(() => Math.round(Math.random() * 50)),
+  schedule_message_id: text("schedule_message_id")
 });
 
 export const questions = sqliteTable("questions", {
