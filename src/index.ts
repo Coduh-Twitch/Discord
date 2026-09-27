@@ -173,9 +173,9 @@ async function injectInitialAuth() {
         expiresIn: 0,
         obtainmentTimestamp: 0
       }
-    }
+      await authProvider.addUserForToken(data)
+    } else authProvider.addUser(data.userId, data);
 
-    await authProvider.addUserForToken(data)
     ensureAuth(data);
   }
 }
