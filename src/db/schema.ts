@@ -86,3 +86,14 @@ export const reminder_dm_users = sqliteTable("reminder_dm_users", {
   user_id: text("user_id").notNull(),
   snoozed_until: integer("snoozed_until").notNull().default(0), // timestamp; 0 = disabled
 });
+
+export const sticky_messages = sqliteTable("sticky_messages", {
+  id: text("id")
+    .notNull()
+    .primaryKey()
+    .$defaultFn(() => randomUUID()),
+  guild_id: text("guild_id").notNull(),
+  channel_id: text("channel_id").notNull(),
+  message_id: text("message_id"),
+  content: text("content").notNull(),
+})

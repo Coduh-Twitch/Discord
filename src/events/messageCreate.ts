@@ -33,6 +33,9 @@ import {
   parseCustomId,
 } from "../utils/customIdUtils";
 import { start } from "node:repl";
+import { ensureOrUpdateStickyMessage, getChannelStickyMessage } from "../db/guilds";
+import interactionCreate from "./interactionCreate";
+import { buildStickyMessage } from "../utils/utils";
 
 export default {
   enabled: true,
@@ -110,6 +113,18 @@ export default {
       }
     }
     if (message.author.bot) return;
+    const sticky = getChannelStickyMessage(message.channelId);
+    if (sticky && sticky.message_id) {
+      const oldMessage = await message.channel.messages.fetch(sticky.message_id);
+      const components = buildStickyMessage(sticky);
+      (message.channel as TextChannel).send({ flags: [MessageFlags.IsComponentsV2], components }).then(async m => {
+        if (oldMessage.deletable) await oldMessage.delete();
+        ensureOrUpdateStickyMessage({ ...sticky, message_id: m.id });
+
+      }).catch(async e => {
+        if(oldMessage.deletable) await oldMessage.delete()
+      })
+    }
     if (
       !dev_mode &&
       message.content.length < 5 &&

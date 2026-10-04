@@ -1,6 +1,6 @@
 import { and, eq } from "drizzle-orm";
 import { db } from ".";
-import { answers, guilds, questions, voters } from "./schema";
+import { answers, guilds, questions, sticky_messages, voters } from "./schema";
 import { client } from "..";
 import config from "../config";
 import { TextChannel } from "discord.js";
@@ -24,6 +24,20 @@ export const updateDbGuild = (
     .returning()
     .get();
 };
+
+export const getChannelStickyMessage = (channelId: string): typeof sticky_messages.$inferInsert | null => {
+  return db.select().from(sticky_messages).where(eq(sticky_messages.channel_id, channelId)).get() || null;
+}
+
+export const ensureOrUpdateStickyMessage = (data: typeof sticky_messages.$inferInsert): typeof sticky_messages.$inferInsert => {
+  const existing = db.select().from(sticky_messages).where(eq(sticky_messages.channel_id, data.channel_id)).get() || null;
+  if (existing) return db.update(sticky_messages).set(data).where(eq(sticky_messages.channel_id, existing.channel_id)).returning().get();
+  return db.insert(sticky_messages).values(data).returning().get();
+}
+
+export const deleteStickyMessage = (channelId: string): typeof sticky_messages.$inferInsert => {
+  return db.delete(sticky_messages).where(eq(sticky_messages.channel_id, channelId)).returning().get();
+}
 
 export const incrementDailyQuestionCount = (
   id: string,
