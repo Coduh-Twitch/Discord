@@ -1,6 +1,6 @@
-import { ApplicationCommandOptionType, ComponentType, LabelBuilder, MessageFlags, ModalBuilder, ModalSubmitInteraction, PermissionFlagsBits, TextInputBuilder, TextInputStyle } from "discord.js";
+import { ApplicationCommandOptionType, channelMention, ComponentType, LabelBuilder, MessageFlags, ModalBuilder, ModalSubmitInteraction, PermissionFlagsBits, TextInputBuilder, TextInputStyle } from "discord.js";
 import { Command, CommandCategory } from "../classes/Command";
-import { ensureOrUpdateStickyMessage, getChannelStickyMessage } from "../db/guilds";
+import { deleteStickyMessage, ensureOrUpdateStickyMessage, getChannelStickyMessage } from "../db/guilds";
 import { TMComponentBuilder } from "../classes/ComponentBuilder";
 import { buildStickyMessage } from "../utils/utils";
 
@@ -35,7 +35,7 @@ const StickyCommand: Command = {
         const input = new TextInputBuilder().setCustomId("sticky-content").setStyle(TextInputStyle.Paragraph)
         if (existingContent) input.setValue(existingContent);
 
-        const label = new LabelBuilder().setLabel("label").setDescription("description");
+        const label = new LabelBuilder().setLabel(`${dbStickyMessage ? "Update" : "New"} Sticky Message`).setDescription(`Enter the sticky message for the "${channel.name}" channel`);
         label.setTextInputComponent(input);
         modal.addLabelComponents([label]);
 
@@ -66,7 +66,20 @@ const StickyCommand: Command = {
       }
 
       case "remove": {
+        const channel = interaction.channel;
+        const dbStickyMessage = getChannelStickyMessage(channel.id);
+        await interaction.deferReply({ flags: [MessageFlags.Ephemeral] });
 
+        if (!dbStickyMessage || !dbStickyMessage.message_id) return interaction.editReply({ flags: [MessageFlags.IsComponentsV2], components: [TMComponentBuilder.errorContainer(false, `${channelMention(channel.id)} does not have a sticky message`).buildContainer()] });
+
+        try {
+          const oldMessage = await channel.messages.fetch(dbStickyMessage.message_id);
+          if (oldMessage && oldMessage.deletable) await oldMessage.delete();
+          deleteStickyMessage(channel.id);
+          await interaction.editReply("Removed sticky message!")
+        } catch (e) {
+          interaction.editReply({ flags: [MessageFlags.IsComponentsV2], components: [TMComponentBuilder.errorContainer(false, `Failed to remove sticky message`).buildContainer()] });
+        }
         break;
       }
     }
