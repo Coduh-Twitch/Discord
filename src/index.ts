@@ -67,7 +67,7 @@ import {
   HelixStream,
 } from "@twurple/api";
 import { RefreshingAuthProvider, StaticAuthProvider } from "@twurple/auth";
-import { post } from "axios";
+import axios, { post } from "axios";
 import mongoose from "mongoose";
 import { calculateRequiredXP, removeXP } from "./utils/xpUtils";
 import { DBUser, userModel } from "./models/user";
@@ -665,11 +665,11 @@ async function initBot(c: Client) {
         config.brand_color,
       );
       liveCon.addTextDisplay(
-        `-# <@&${config.roles.members}>\n# [${(await stream.getUser()).displayName ?? process.env.TWITCH_CHANNEL_NAME} is Live!](https://twitch.tv/${process.env.TWITCH_CHANNEL_NAME})`,
+        `-# <@&${dev_mode ? config.roles.vip : config.roles.members}>\n# [${(await stream.getUser()).displayName ?? process.env.TWITCH_CHANNEL_NAME} is Live!](https://twitch.tv/${process.env.TWITCH_CHANNEL_NAME})`,
       );
       if (stream && stream?.startDate && stream?.gameName && stream?.title)
         liveCon.addTextDisplay(
-          `> ${stream?.title}${stream?.gameName !== "" ? `\n-# Playing **${stream?.gameName}**` : ``}`,
+          `> ${stream?.title}${(stream?.gameName || "") !== "" ? `\n-# Playing **${stream?.gameName}**` : ``}`,
         );
       liveCon.addSeparator(SeparatorSpacingSize.Large, false);
       if (stream && stream.getThumbnailUrl)
@@ -773,6 +773,10 @@ async function initBot(c: Client) {
           `### ${channelUser.displayName} was Live${stream.startDate && !Number.isNaN(stream.startDate) ? ` on <t:${Math.floor(stream.startDate / 1000)}:f> (<t:${Math.floor(stream.startDate / 1000)}:R>)` : "!"}\n> ${stream.gameName !== "" ? `Played ${stream?.gameName || "a mystery game"} until <t:${Math.floor(Date.now() / 1000)}:f>` : `Streamed from <t:${Math.floor(stream.startDate / 1000)}:t> to <t:${Math.floor(Date.now() / 1000)}:t>`}${lastVod ? `\n### [Click to Watch VOD](https://twitch.tv/videos/${lastVod.id})` : ""}`,
         );
         offlineCon.addSeparator(SeparatorSpacingSize.Large, false);
+
+        try {
+          await axios.post(`${process.env.DUCKY_BOT_URL}/coduh/download-video`, { videoId: lastVod.id });
+        } catch (e) { }
 
         if (editMessage !== null) {
           editMessage
