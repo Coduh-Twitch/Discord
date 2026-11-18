@@ -91,11 +91,13 @@ export default {
       // con.addTextDisplay(`**Your Profile**\n\nUse </profile view:${profileCommandId}> to view your profile, including your **top 5 favorite movies**!\n\nAdd your first favorite movie with </profile movies add:${profileCommandId}>, and fine-tune your list with </profile movies reorder:${profileCommandId}>!`);
       // if(image) con.addMediaGallery([{media: {url: image.url}}]);
 
-      hangoutChannel.send({
-        flags: [MessageFlags.IsComponentsV2],
-        components: [con.buildContainer()],
-      });
-      if (image) introChannel.send({ files: [image.attachment] });
+      if (!new_member.user.bot) {
+        hangoutChannel.send({
+          flags: [MessageFlags.IsComponentsV2],
+          components: [con.buildContainer()],
+        });
+        if (image) introChannel.send({ files: [image.attachment] });
+      }
       dbUser.set("shownWelcomeMessage", true);
       dbUser.set("lastMessageTimestamp", Date.now());
 
@@ -106,7 +108,7 @@ export default {
       }
 
       try {
-        await post(`${process.env.CHATBOT_BASE_URL}/api/discord/new-member`, {
+        if(!new_member.user.bot) await post(`${process.env.CHATBOT_BASE_URL}/api/discord/new-member`, {
           username: new_member.user.username,
           memberCount: new_member.guild.memberCount,
         });
