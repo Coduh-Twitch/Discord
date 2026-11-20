@@ -96,7 +96,7 @@ import {
   updateDbGuild,
 } from "./db/guilds";
 import { initDailyEvents, modes, QuestionModes } from "./commands/daily";
-import { answers, authorizations, questions, reminders, voters } from "./db/schema";
+import { answers, authorizations, faq, questions, reminders, voters } from "./db/schema";
 import { createCustomId, parseCustomId } from "./utils/customIdUtils";
 import { randomUUID } from "crypto";
 import {
@@ -106,6 +106,7 @@ import {
 } from "./utils/reminderUtils";
 import Lounge from "./classes/Lounge";
 import { ensureAuth, getAuth } from "./db/auth";
+import { formatFaqEntry } from "./utils/utils";
 
 // throw new Error(generateDependencyReport());
 
@@ -631,7 +632,7 @@ async function initBot(c: Client) {
     let apiStream = await twitchApiClient.streams.getStreamByUserId(
       e.broadcasterId,
     );
-    console.log("STREAM", apiStream.gameName, apiStream.startDate);
+    // console.log("STREAM", apiStream?.gameName, apiStream?.startDate);
     try {
       const notifChannel = c.guilds.cache
         .get(config.guild)
@@ -665,14 +666,14 @@ async function initBot(c: Client) {
         config.brand_color,
       );
       liveCon.addTextDisplay(
-        `-# <@&${dev_mode ? config.roles.vip : config.roles.members}>\n# [${(await stream.getUser()).displayName ?? process.env.TWITCH_CHANNEL_NAME} is Live!](https://twitch.tv/${process.env.TWITCH_CHANNEL_NAME})`,
+        `-# <@&${dev_mode ? config.roles.vip : config.roles.members}>\n# [${stream ? (await stream.getUser())?.displayName || process.env.TWITCH_CHANNEL_NAME : process.env.TWITCH_CHANNEL_NAME} is Live!](https://twitch.tv/${process.env.TWITCH_CHANNEL_NAME})`,
       );
       if (stream && stream?.startDate && stream?.gameName && stream?.title)
         liveCon.addTextDisplay(
           `> ${stream?.title}${(stream?.gameName || "") !== "" ? `\n-# Playing **${stream?.gameName}**` : ``}`,
         );
       liveCon.addSeparator(SeparatorSpacingSize.Large, false);
-      if (stream && stream.getThumbnailUrl)
+      if (stream && (stream.getThumbnailUrl(1920,1080) || "") !== "")
         liveCon.addMediaGallery([
           { media: { url: stream?.getThumbnailUrl(1920, 1080) } },
         ]);
@@ -2002,6 +2003,37 @@ export async function logEvent(
 
       break;
     }
+
+    case "faqEntryUpdated": {
+      let user: User = args["user"];
+      let oldEntry: typeof faq.$inferInsert = args["oldEntry"];
+      let newEntry: typeof faq.$inferInsert | null = args["newEntry"];
+
+      let changes: Map<string, any[]> = new Map();
+
+      Object.entries(newEntry).forEach(([k, v]) => {
+        if (oldEntry[k] !== newEntry[k]) changes.set(k, [oldEntry[k], v]);
+      });
+
+      let changesArr: string[] = [];
+      for (let [key, [o, n]] of changes) {
+        o = `${o}`
+          .replace("false", "Published")
+          .replace("true", "Unpublished")
+        n = `${n}`
+          .replace("false", "Published")
+          .replace("true", "Unpublished")
+        changesArr.push(`**${key.replace(key.charAt(0), key.charAt(0).toUpperCase())}**: ~~${o}~~ -> **${n}**`);
+      }
+
+      logChannel.send({
+        flags: [MessageFlags.IsComponentsV2],
+        components: [
+          logContainer(`FAQ Entry ${newEntry ? "Updated" : "Deleted"}`, `${user.username} (${user.id}) ${newEntry ? `updated **${changes.size} value${changes.size === 1 ? "" : "s"}** on entry \`${oldEntry.id}\`\n### Changes\n${changesArr.join("\n")}` : `deleted an entry with the ID \`${oldEntry.id}\`\n### Deleted Entry\n${formatFaqEntry(oldEntry)}`}`).buildContainer()
+        ]
+      })
+      break;
+    }
   }
 }
 
@@ -2186,6 +2218,9 @@ logsInitInterval = setInterval(() => {
     console.log("Initialized Logs");
     if (logsInitInterval) clearInterval(logsInitInterval);
   }
+  client.on("faqEntryUpdated", async (user, oldEntry, newEntry) => {
+    await logEvent("faqEntryUpdated", { user, oldEntry, newEntry });
+  });
 }, 1e3);
 
 client.login(process.env.TOKEN);
