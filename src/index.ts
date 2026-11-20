@@ -2004,36 +2004,36 @@ export async function logEvent(
       break;
     }
 
-    case "faqEntryUpdated": {
-      let user: User = args["user"];
-      let oldEntry: typeof faq.$inferInsert = args["oldEntry"];
-      let newEntry: typeof faq.$inferInsert | null = args["newEntry"];
-
-      let changes: Map<string, any[]> = new Map();
-
-      Object.entries(newEntry).forEach(([k, v]) => {
-        if (oldEntry[k] !== newEntry[k]) changes.set(k, [oldEntry[k], v]);
-      });
-
-      let changesArr: string[] = [];
-      for (let [key, [o, n]] of changes) {
-        o = `${o}`
-          .replace("false", "Published")
-          .replace("true", "Unpublished")
-        n = `${n}`
-          .replace("false", "Published")
-          .replace("true", "Unpublished")
-        changesArr.push(`**${key.replace(key.charAt(0), key.charAt(0).toUpperCase())}**: ~~${o}~~ -> **${n}**`);
-      }
-
-      logChannel.send({
-        flags: [MessageFlags.IsComponentsV2],
-        components: [
-          logContainer(`FAQ Entry ${newEntry ? "Updated" : "Deleted"}`, `${user.username} (${user.id}) ${newEntry ? `updated **${changes.size} value${changes.size === 1 ? "" : "s"}** on entry \`${oldEntry.id}\`\n### Changes\n${changesArr.join("\n")}` : `deleted an entry with the ID \`${oldEntry.id}\`\n### Deleted Entry\n${formatFaqEntry(oldEntry)}`}`).buildContainer()
-        ]
-      })
-      break;
-    }
+//     case "faqEntryUpdated": {
+//       let user: User = args["user"];
+//       let oldEntry: typeof faq.$inferInsert = args["oldEntry"];
+//       let newEntry: typeof faq.$inferInsert | null = args["newEntry"];
+//
+//       let changes: Map<string, any[]> = new Map();
+//
+//       Object.entries(newEntry).forEach(([k, v]) => {
+//         if (oldEntry[k] !== newEntry[k]) changes.set(k, [oldEntry[k], v]);
+//       });
+//
+//       let changesArr: string[] = [];
+//       for (let [key, [o, n]] of changes) {
+//         o = `${o}`
+//           .replace("false", "Published")
+//           .replace("true", "Unpublished")
+//         n = `${n}`
+//           .replace("false", "Published")
+//           .replace("true", "Unpublished")
+//         changesArr.push(`**${key.replace(key.charAt(0), key.charAt(0).toUpperCase())}**: ~~${o}~~ -> **${n}**`);
+//       }
+//
+//       logChannel.send({
+//         flags: [MessageFlags.IsComponentsV2],
+//         components: [
+//           logContainer(`FAQ Entry ${newEntry ? "Updated" : "Deleted"}`, `${user.username} (${user.id}) ${newEntry ? `updated **${changes.size} value${changes.size === 1 ? "" : "s"}** on entry \`${oldEntry.id}\`\n### Changes\n${changesArr.join("\n")}` : `deleted an entry with the ID \`${oldEntry.id}\`\n### Deleted Entry\n${formatFaqEntry(oldEntry)}`}`).buildContainer()
+//         ]
+//       })
+//       break;
+//     }
   }
 }
 
