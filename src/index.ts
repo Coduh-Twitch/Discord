@@ -106,7 +106,6 @@ import {
 } from "./utils/reminderUtils";
 import Lounge from "./classes/Lounge";
 import { ensureAuth, getAuth } from "./db/auth";
-import { formatFaqEntry } from "./utils/utils";
 
 // throw new Error(generateDependencyReport());
 
