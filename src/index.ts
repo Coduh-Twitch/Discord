@@ -96,7 +96,7 @@ import {
   updateDbGuild,
 } from "./db/guilds";
 import { initDailyEvents, modes, QuestionModes } from "./commands/daily";
-import { answers, authorizations, faq, questions, reminders, voters } from "./db/schema";
+import { answers, authorizations, questions, reminders, voters } from "./db/schema";
 import { createCustomId, parseCustomId } from "./utils/customIdUtils";
 import { randomUUID } from "crypto";
 import {
